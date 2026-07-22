@@ -44,6 +44,10 @@ class _PluginWidgetViewState extends State<PluginWidgetView> {
   void _action(String? name,
       {Map<String, dynamic>? args, bool reRender = true}) {
     if (name == null || name.isEmpty) return;
+    if (name == '__exit__') {
+      Navigator.of(context).pop();
+      return;
+    }
     widget.runtime.action(name, args);
     if (reRender) _refresh();
   }

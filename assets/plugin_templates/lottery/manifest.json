@@ -3,13 +3,13 @@
   "magic": "STARHOPE_PLUGIN",
   "format_version": 1,
   "id": "shp.sycamorelost.lottery",
-  "name": "抽奖工具",
-  "version": "1.0.0",
-  "description": "全量抽奖插件：奖品管理/权重/多策略(均匀/按权重/不重复)/抽奖/历史/统计",
+  "name": "抽奖 & 点名",
+  "version": "3.0.0",
+  "description": "全量抽奖(奖品管理/权重/限中/排除/必中/多策略/批量/概率预览/方案/导入导出) + 点名(名单/批量/请假/不重复/历史)",
   "entry": "main.js",
   "permissions": ["log", "storage"],
   "author": { "signed": false },
-  "extensions": [ { "type": "tool_page", "id": "main", "title": "抽奖", "icon": "casino" } ],
+  "extensions": [ { "type": "tool_page", "id": "main", "title": "抽奖&点名", "icon": "casino" } ],
   "params_schema": {},
-  "files": [ { "name": "main.js", "sha256": "b920ebc4eedbe5ea66161e905aec89c1e517204b04802b0863bb8ad208b5821a", "size": 7347 } ]
+  "files": [ { "name": "main.js", "sha256": "f77defe5d156ef6e8dae3bf5076de8fa59b897174eeba1dfa3a3093dd9ff4fdf", "size": 23792 } ]
 }
