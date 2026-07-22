@@ -9,6 +9,7 @@ import 'providers/practice_exam_provider.dart';
 import 'providers/question_provider.dart';
 import 'providers/reader_provider.dart';
 import 'providers/theme_provider.dart';
+import 'services/tray_service.dart';
 import 'services/window_service.dart';
 import 'views/auth/auth_gate.dart';
 import 'views/common/page_transitions.dart';
@@ -94,6 +95,7 @@ class _StarHopeRootState extends State<StarHopeRoot> {
       final theme = context.read<ThemeProvider>();
       final auth = context.read<AuthProvider>();
       await Future.wait([theme.init(), auth.bootstrap()]);
+      await TrayService.instance.init();
     });
   }
 
