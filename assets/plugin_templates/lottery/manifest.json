@@ -1,10 +1,10 @@
 {
   "app": "StarHope", "magic": "STARHOPE_PLUGIN", "format_version": 1,
-  "id": "shp.sycamorelost.lottery", "name": "抽奖 & 点名", "version": "12.0.0",
-  "description": "全量抽奖+点名（原生级UI：三级空状态+slider+滚动动画+多档/权重/限中/排除/必中/多策略/批量/概率进度条/中签统计/方案/导入导出/点名加权/随机分组/撤销/Space快捷键/历史导出）",
+  "id": "shp.sycamorelost.lottery", "name": "抽奖 & 点名", "version": "13.0.0",
+  "description": "全量抽奖+点名（原生级：多格式导入JSON/CSV/TXT+中文keyMap+三级空状态+slider+滚动动画+多档+权重+限中+排除+必中+批量+概率进度条+中签统计+方案+导入导出+点名加权+随机分组+撤销+Space+历史导出）",
   "entry": "main.js", "permissions": ["log", "storage"],
   "author": { "signed": false },
   "extensions": [ { "type": "tool_page", "id": "main", "title": "抽奖&点名", "icon": "casino" } ],
   "params_schema": {},
-  "files": [ { "name": "main.js", "sha256": "4213dc949e1ad08a2c55e49c1bddee77ed459f655beb14e9480da00b9843abfb", "size": 27970 } ]
+  "files": [ { "name": "main.js", "sha256": "0db30671fd604cf89531214170a91fbd4df33ddad082622791dde6b4e3ae231f", "size": 28173 } ]
 }
