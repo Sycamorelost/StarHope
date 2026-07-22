@@ -2,6 +2,7 @@
 
 > 本文件供新会话读取后立即接续开发。
 > **最后更新（2026-07-22）**：项目从 Deep-tutor monorepo（`d:\MyProject\Deep-tutor\REF\SH`）迁移至 `d:\Personnel\StarHope` 独立 git 仓库并推送 GitHub（https://github.com/Sycamorelost/StarHope，分支 main）；memory 文件同步迁移至 `d--Personnel-StarHope`。代码状态不变（db v7、依赖与架构未变）。
+> **更新（2026-07-23）**：登录页左侧毛玻璃面板插图由"银河流行动画（`GalaxyView`）"改为"静态精致地球（`EarthView`，`lib/views/common/earth_view.dart`）"——纯 CustomPaint 球面正交投影（陆地按真实经纬度分布 + Δlon 细分 + clipPath 兜底），**地球不自转**，叠加气候带陆地渐变（极地白/温带绿/热带棕）+ 半透明云层 + 边缘大气散射 rim light + 海洋镜面反光 + 晨昏阴影，旁边流星；删除已无引用的 `galaxy_view.dart`。flutter analyze 0 issues、build windows + 运行（timeout 退出码 124）通过。
 > 项目根目录：`d:\Personnel\StarHope`（独立 git 仓库，远程 https://github.com/Sycamorelost/StarHope，分支 main；Windows 10 Home China / Flutter 3.44.7 / Dart 3.12.2）。
 > StarHope（Flutter 桌面）与 Deep-tutor（Web，backend/frontend/extension）是两个独立技术栈项目；StarHope 此前曾作为参考纳入 Deep-tutor monorepo 的 `REF/SH` 子目录，现已独立为单独仓库（GitHub: Sycamorelost/StarHope）。未来仍计划通过 API 与 Deep-tutor 后端集成。
 
@@ -46,7 +47,7 @@ flutter build windows
 - ✅ **PDF 原生渲染 + 绘图笔记坐标系重构（待办3 完成）**：`reader_viewer_page.dart` 分叉，PDF 走 `PdfViewer.file`（内置 pan/scale），文本路径不变；绘图笔画存 PDF user-space 坐标（`pageOverlaysBuilder` 线性映射，随缩放对齐），`_drawMode` 切换两套 `PdfViewerParams` 解手势冲突；新格式 `{version:2,cs:pdf,page,strokes}`，旧占位笔画一次性对话框清除。
 - ✅ 数据存储到用户指定位置：`StorageConfig`（引导配置在 app support dir，数据根可改）；设置页"数据存储位置"项，复制数据后重启生效。
 - ✅ 无边框圆角窗口 + 自定义标题栏（`WindowTitleBar`，拖动/最小化/最大化/全屏/关闭，win32 FFI `window_service.dart`）。
-- ✅ **登录页布局重构（待办1 完成）**：整页星空背景（`StarrySky`）+ 左右两个等高毛玻璃面板并排——左侧**银河流行动画**（`galaxy_view.dart`，银河带+密集星点+沿带流光），右侧登录卡（头像→昵称→@账号→密码→登录，账号只读展示，`GlassCard.surfaceColor` 实色提升对比）。已注册用户由 `AuthService.storedUser()`/`AuthProvider.registeredUser` 暴露。
+- ✅ **登录页布局重构（待办1 完成）**：整页星空背景（`StarrySky`）+ 左右两个等高毛玻璃面板并排——左侧**静态精致地球**（`earth_view.dart`，气候带陆地渐变+云层+大气rim light+海洋反光+流星，不自转），右侧登录卡（头像→昵称→@账号→密码→登录，账号只读展示，`GlassCard.surfaceColor` 实色提升对比）。已注册用户由 `AuthService.storedUser()`/`AuthProvider.registeredUser` 暴露。
 - ✅ StarryButton 灵动按钮（`starry_button.dart`）：悬停时星空环绕高亮+缩放。
 - ✅ 设置底部赞赏栏（`_donateBar`，跳转 `https://ifdian.net/a/ilovesl`）。
 - ✅ 免责声明（`disclaimer.dart` 的 `kDisclaimer` + `showDisclaimerDialog`，署名「梧桐吾桐」）。
@@ -139,13 +140,13 @@ lib/
       glass.dart                # GlassCard(含可选 surfaceColor 实色背景)/GlassAppBar/SourceBadge/PoweredFooter/EmptyState
       window_title_bar.dart     # 自定义标题栏（全屏按钮）
       starry_sky.dart           # ★ 流星星空动画（星点坐标按尺寸预生成缓存）
-      galaxy_view.dart          # ★ 银河流行动画（银河带+密集星点+沿带流光，登录页左面板）
+      earth_view.dart           # ★ 静态精致地球（气候带陆地渐变+云层+大气rim light+海洋反光+流星，登录页左面板）
       starry_button.dart        # ★ 灵动按钮（悬停星空高亮）
       disclaimer.dart           # 免责声明全文 + 弹窗
       user_avatar.dart          # 头像组件（显示头像或首字母）
     auth/
       auth_gate.dart            # hasUser?LoginPage:RegisterPage / 已登录 HomeShell
-      login_page.dart           # ★ 整页星空背景 + 左银河面板 + 右登录卡（头像/昵称/@账号/密码）
+      login_page.dart           # ★ 整页星空背景 + 左地球面板 + 右登录卡（头像/昵称/@账号/密码）
       register_page.dart
     home/
       home_shell.dart           # NavigationRail/底部导航
