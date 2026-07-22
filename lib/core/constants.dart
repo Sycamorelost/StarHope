@@ -9,6 +9,13 @@ class AppConstants {
   static const String magic = 'STARHOPE';
   static const int formatVersion = 1;
 
+  /// .starhope-plugin 插件包魔数与版本
+  static const String pluginMagic = 'STARHOPE_PLUGIN';
+  static const int pluginFormatVersion = 1;
+
+  /// 插件 ID 前缀（专有名，绑定本应用，防泛滥）：'shp.<author>.<name>'
+  static const String pluginIdPrefix = 'shp.';
+
   /// PBKDF2 参数（≥100,000 次迭代）
   static const int pbkdf2Iterations = 120000;
   static const int pbkdf2KeyBits = 256; // AES-256
@@ -62,6 +69,7 @@ enum ShareContentType {
   exam,
   practiceRecord,
   examResultRecord,
+  plugin,
 }
 
 extension ShareContentTypeX on ShareContentType {
@@ -81,6 +89,8 @@ extension ShareContentTypeX on ShareContentType {
         return 'practice_record';
       case ShareContentType.examResultRecord:
         return 'exam_result_record';
+      case ShareContentType.plugin:
+        return 'plugin';
     }
   }
 
@@ -98,6 +108,8 @@ extension ShareContentTypeX on ShareContentType {
         return ShareContentType.practiceRecord;
       case 'exam_result_record':
         return ShareContentType.examResultRecord;
+      case 'plugin':
+        return ShareContentType.plugin;
       default:
         return ShareContentType.questionBank;
     }
