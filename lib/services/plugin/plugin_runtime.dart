@@ -17,6 +17,7 @@ class PluginRuntime {
   final JavascriptRuntime _rt;
   final File _storageFile;
   final Map<String, dynamic> _storage;
+  void Function()? onRerender;
 
   PluginRuntime._(this.id, this._rt, this._storageFile, this._storage);
 
@@ -46,6 +47,7 @@ class PluginRuntime {
     _rt.onMessage('StarhopeLog', (args) {
       debugPrint('[plugin:$id] $args');
     });
+    _rt.onMessage('Rerender', (_) => onRerender?.call());
     _rt.onMessage('StarhopeStorage', (args) async {
       try {
         final list = args as List;
@@ -75,6 +77,7 @@ class PluginRuntime {
     };
     starhope.random = function(max){ return Math.floor(Math.random() * max); };
     starhope.randomInt = function(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; };
+    starhope.rerender = function(){ sendMessage('Rerender', '{}'); };
   ''';
 
   /// 调用插件 render()，返回 widget 树 JSON 字符串（无 render 返回诊断 JSON）。

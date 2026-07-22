@@ -22,6 +22,7 @@ class _PluginWidgetViewState extends State<PluginWidgetView> {
   @override
   void initState() {
     super.initState();
+    widget.runtime.onRerender = _refresh;
     _refresh();
   }
 
