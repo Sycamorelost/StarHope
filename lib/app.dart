@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'providers/ai_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/home_nav_provider.dart';
+import 'providers/plugin_provider.dart';
 import 'providers/practice_exam_provider.dart';
 import 'providers/question_provider.dart';
 import 'providers/reader_provider.dart';
@@ -40,6 +41,7 @@ class StarHopeApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AIProvider()),
         ChangeNotifierProvider(create: (_) => ReaderProvider()),
         ChangeNotifierProvider(create: (_) => HomeNavProvider()),
+        ChangeNotifierProvider(create: (_) => PluginProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, theme, _) => MaterialApp(

@@ -531,6 +531,8 @@ class ShareMetaCard extends StatelessWidget {
         return '笔记';
       case ShareContentType.exam:
         return '考试';
+      case ShareContentType.plugin:
+        return '插件';
       case ShareContentType.practiceRecord:
         return '练习记录';
       case ShareContentType.examResultRecord:

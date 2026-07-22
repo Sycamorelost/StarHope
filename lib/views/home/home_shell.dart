@@ -13,6 +13,7 @@ import '../common/theme.dart';
 import '../common/window_title_bar.dart';
 import 'ai_page.dart';
 import 'exam_page.dart';
+import 'plugin_toolbox_page.dart';
 import 'practice_page.dart';
 import 'question_bank_page.dart';
 import 'reader_page.dart';
@@ -36,6 +37,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     ExamPage(),
     ReaderPage(),
     AIPage(),
+    PluginToolboxPage(),
     SettingsPage(),
   ];
 
@@ -47,6 +49,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     (icon: Icons.school_outlined, label: '考试'),
     (icon: Icons.menu_book_outlined, label: '阅读'),
     (icon: Icons.smart_toy_outlined, label: 'AI'),
+    (icon: Icons.extension_outlined, label: '插件'),
     (icon: Icons.settings_outlined, label: '我的'),
   ];
 
