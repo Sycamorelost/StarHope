@@ -1,10 +1,10 @@
 {
   "app": "StarHope", "magic": "STARHOPE_PLUGIN", "format_version": 1,
-  "id": "shp.sycamorelost.lottery", "name": "抽奖 & 点名", "version": "8.0.0",
-  "description": "全量抽奖+点名（多档/权重/限中/排除/必中/多策略/批量/概率进度条/中签统计/方案/导入导出/点名加权/随机分组）。统一间距节奏与卡片内边距。",
+  "id": "shp.sycamorelost.lottery", "name": "抽奖 & 点名", "version": "9.0.0",
+  "description": "全量抽奖+点名：多档/权重/限中/排除/必中/多策略/批量/概率进度条/中签统计/方案/导入导出/点名加权/随机分组/撤销上次抽奖",
   "entry": "main.js", "permissions": ["log", "storage"],
   "author": { "signed": false },
   "extensions": [ { "type": "tool_page", "id": "main", "title": "抽奖&点名", "icon": "casino" } ],
   "params_schema": {},
-  "files": [ { "name": "main.js", "sha256": "054c7f92885f6dd140e223e5f8ff8418e47590523820a89744ba56d624ee381c", "size": 25177 } ]
+  "files": [ { "name": "main.js", "sha256": "10930775686c6a32209fdbe1fdb038752b0925d4b35df1bde778b1a1e484668b", "size": 26036 } ]
 }

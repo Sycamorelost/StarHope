@@ -9,6 +9,7 @@ var lastResults = [];
 var tierResults = {};
 var rollResults = [];
 var rollGroups = [];
+var lastDrawIds = [];
 var msg = '';
 var tab = 'draw';
 
@@ -75,7 +76,7 @@ function drawTab(){
     var total = pool.reduce(function(a, x){ return a + (parseInt(x.weight)||1); }, 0);
     prev = card('中签概率（按权重）', pool.map(function(p){ var frac = total > 0 ? (parseInt(p.weight)||1) / total : 0; var pct = (frac * 100).toFixed(1); return {type:'column', crossAxisAlignment:'stretch', children:[ {type:'row', children:[body(p.name, null), {type:'spacer'}, body(pct + '%', 'primary')]}, gap(3), {type:'progress', value:frac, color:'primary'}, gap(6) ]}; }));
   }
-  return col([ card('抽奖设置', [ h2('策略'), gap(4), {type:'segmented', value:getStrategy(), options:[{value:'uniform', label:'均匀随机'},{value:'weighted', label:'按权重'}], onChanged:'setStrategy'}, gap(8), {type:'checkbox', value:getUnique(), label:'不重复抽取（抽中移出奖池）', onChanged:'setUnique'}, gap(8), {type:'row', children:[body('每次抽取个数：'), {type:'sizedbox', width:70, child:{type:'textfield', key:'batch', label:'个数', value:''+getBatch(), keyboard:'number', onChanged:'setBatch'}}]}, (getUnique() || pool.length < prizes.length) ? muted('奖池剩余 ' + pool.length + ' / ' + prizes.length) : gap(0) ]), gap(12), card('普通抽奖', [ {type:'button', icon:'casino', label: pool.length ? '抽取 ' + batch + ' 个' : '奖池为空', onTap:'draw', expanded:true}, gap(8), getUnique() ? {type:'button', icon:'refresh', variant:'outlined', label:'重置奖池与限中', onTap:'resetDrawn'} : gap(0), gap(12) ].concat(resultKids).concat([msg ? body(msg, 'error') : gap(0)])), gap(12), card('多档抽奖（按档位各抽 ' + getBatch() + ' 个）', [ {type:'button', icon:'star', variant:'tonal', label:'按一/二/三等奖各抽', onTap:'drawTiered', expanded:true}, gap(8), muted('从各档位奖品池分别抽取'), gap(12) ].concat(tierKids)), gap(12), prev ]);
+  return col([ card('抽奖设置', [ h2('策略'), gap(4), {type:'segmented', value:getStrategy(), options:[{value:'uniform', label:'均匀随机'},{value:'weighted', label:'按权重'}], onChanged:'setStrategy'}, gap(8), {type:'checkbox', value:getUnique(), label:'不重复抽取（抽中移出奖池）', onChanged:'setUnique'}, gap(8), {type:'row', children:[body('每次抽取个数：'), {type:'sizedbox', width:70, child:{type:'textfield', key:'batch', label:'个数', value:''+getBatch(), keyboard:'number', onChanged:'setBatch'}}]}, (getUnique() || pool.length < prizes.length) ? muted('奖池剩余 ' + pool.length + ' / ' + prizes.length) : gap(0) ]), gap(12), card('普通抽奖', [ {type:'button', icon:'casino', label: pool.length ? '抽取 ' + batch + ' 个' : '奖池为空', onTap:'draw', expanded:true}, gap(8), getUnique() ? {type:'button', icon:'refresh', variant:'outlined', label:'重置奖池与限中', onTap:'resetDrawn'} : gap(0), lastDrawIds.length ? {type:'button', icon:'refresh', variant:'outlined', label:'撤销上次抽奖', onTap:'undoDraw'} : gap(0), gap(12) ].concat(resultKids).concat([msg ? body(msg, 'error') : gap(0)])), gap(12), card('多档抽奖（按档位各抽 ' + getBatch() + ' 个）', [ {type:'button', icon:'star', variant:'tonal', label:'按一/二/三等奖各抽', onTap:'drawTiered', expanded:true}, gap(8), muted('从各档位奖品池分别抽取'), gap(12) ].concat(tierKids)), gap(12), prev ]);
 }
 
 function rollTab(){
@@ -117,7 +118,7 @@ function rollPool(){ var rd = getRollDrawn(); return getNames().filter(function(
 
 var schemeName = '', bulkDraft = '';
 function onAction(name, args){
-  msg = ''; lastResults = []; tierResults = {}; rollGroups = [];
+  msg = ''; lastResults = []; tierResults = {}; rollGroups = []; lastDrawIds = [];
   if (name.indexOf('goto:') === 0) { tab = name.substring(5); return; }
   if (name === 'setTab') { tab = args.value; return; }
   if (name.indexOf('remove:') === 0) { savePrizes(getPrizes().filter(function(p){ return p.id !== name.substring(7); })); return; }
@@ -141,6 +142,7 @@ function onAction(name, args){
     case 'resetDrawn': starhope.storage.set('drawn', []); starhope.storage.set('counts', {}); break;
     case 'draw': draw(); break;
     case 'drawTiered': drawTiered(); break;
+    case 'undoDraw': undoDraw(); break;
     case 'clearHistory': starhope.storage.set('history', []); break;
     case 'setSchemeName': schemeName = args.value; break;
     case 'saveScheme': saveScheme(); break;
@@ -171,11 +173,19 @@ function loadScheme(i){ var s = getSchemes(); if (i<0||i>=s.length) return; var 
 function importJson(){ var raw = starhope.storage.get('__clip__'); if (!raw) { msg = '剪贴板为空'; return; } try { var arr = JSON.parse(raw); if (!arr || arr.length === undefined) throw 'x'; var p = getPrizes(); arr.forEach(function(x){ p.push({id: uid(), name: x.name||'?', weight: parseInt(x.weight)||1, maxCount: parseInt(x.maxCount)||0, exclude: false, must: false, tier: parseInt(x.tier)||1}); }); savePrizes(p); msg = '已导入 ' + arr.length + ' 个奖品'; } catch(e) { msg = '导入失败：非有效 JSON 数组'; } }
 function drawN(pool, n, strategy){ var avail = pool.slice(), winners = []; for (var i = 0; i < n && avail.length; i++) { var idx; if (strategy === 'weighted') { var total = avail.reduce(function(a, p){ return a + (parseInt(p.weight)||1); }, 0); var r = Math.random() * total, acc = 0; idx = avail.length - 1; for (var j = 0; j < avail.length; j++) { acc += (parseInt(avail[j].weight)||1); if (r < acc) { idx = j; break; } } } else { idx = Math.floor(Math.random() * avail.length); } winners.push(avail[idx]); avail.splice(idx, 1); } return winners; }
 function recordWinners(winners){ var h = getHistory(); h.unshift({time: nowStr(), names: winners.map(function(p){ return p.name; })}); if (h.length > 100) h = h.slice(0, 100); starhope.storage.set('history', h); var counts = getCounts(), drawn = getDrawn(); winners.forEach(function(p){ counts[p.id] = (counts[p.id]||0) + 1; if (getUnique()) drawn.push(p.id); }); starhope.storage.set('counts', counts); starhope.storage.set('drawn', drawn); }
-function draw(){ var pool = poolInfo(); if (!pool.length) { msg = '奖池为空'; return; } var must = pool.filter(function(p){ return p.must; }); var rest = pool.filter(function(p){ return !p.must; }); var batch = Math.min(getBatch(), pool.length); var winners = must.slice(0, batch); var need = batch - winners.length; winners = winners.concat(drawN(rest, need, getStrategy())); lastResults = winners.map(function(p){ return p.name; }); recordWinners(winners); }
-function drawTiered(){ var counts = getCounts(), drawn = getDrawn(); var all = getPrizes(); tierResults = {}; var any = false; [1,2,3].forEach(function(t){ var tpool = all.filter(function(p){ return (p.tier||1) === t && !p.exclude && !(p.maxCount > 0 && (counts[p.id]||0) >= p.maxCount) && !(getUnique() && drawn.indexOf(p.id) >= 0); }); if (tpool.length) { var winners = drawN(tpool, Math.min(getBatch(), tpool.length), getStrategy()); tierResults[t] = winners.map(function(p){ return p.name; }); recordWinners(winners); any = true; } }); if (!any) { msg = '无可抽取的档位奖品'; } }
+function draw(){ var pool = poolInfo(); if (!pool.length) { msg = '奖池为空'; return; } var must = pool.filter(function(p){ return p.must; }); var rest = pool.filter(function(p){ return !p.must; }); var batch = Math.min(getBatch(), pool.length); var winners = must.slice(0, batch); var need = batch - winners.length; winners = winners.concat(drawN(rest, need, getStrategy())); lastResults = winners.map(function(p){ return p.name; }); recordWinners(winners); lastDrawIds = winners.map(function(p){ return p.id; }); }
+function drawTiered(){ var counts = getCounts(), drawn = getDrawn(); var all = getPrizes(); tierResults = {}; var any = false; [1,2,3].forEach(function(t){ var tpool = all.filter(function(p){ return (p.tier||1) === t && !p.exclude && !(p.maxCount > 0 && (counts[p.id]||0) >= p.maxCount) && !(getUnique() && drawn.indexOf(p.id) >= 0); }); if (tpool.length) { var winners = drawN(tpool, Math.min(getBatch(), tpool.length), getStrategy()); tierResults[t] = winners.map(function(p){ return p.name; }); recordWinners(winners); winners.forEach(function(p){ lastDrawIds.push(p.id); }); any = true; } }); if (!any) { msg = '无可抽取的档位奖品'; } }
 
 function addName(){ var n = (rollDraft || '').trim(); if (!n) { msg = '姓名不能为空'; return; } var names = getNames(); names.push({id: uid(), name: n, leave: false, weight: 1}); saveNames(names); rollDraft = ''; }
 function addBulk(){ var parts = (bulkDraft || '').split(/[，,\n]/).map(function(s){ return s.trim(); }).filter(function(s){ return s; }); if (!parts.length) { msg = '批量输入为空'; return; } var names = getNames(); parts.forEach(function(s){ names.push({id: uid(), name: s, leave: false, weight: 1}); }); saveNames(names); bulkDraft = ''; msg = '已批量添加 ' + parts.length + ' 人'; }
 function importNames(){ var raw = starhope.storage.get('__clip__'); if (!raw) { msg = '剪贴板为空'; return; } try { var arr = JSON.parse(raw); if (!arr) throw 'x'; var names = getNames(); (arr.length !== undefined ? arr : [arr]).forEach(function(s){ names.push({id: uid(), name: typeof s === 'string' ? s : (s.name||'?'), leave: false, weight: typeof s === 'object' ? (parseInt(s.weight)||1) : 1}); }); saveNames(names); msg = '已导入 ' + (arr.length !== undefined ? arr.length : 1) + ' 人'; } catch(e) { msg = '导入失败：非有效 JSON'; } }
+function undoDraw(){
+  if (!lastDrawIds.length) { msg = '没有可撤销的抽奖'; return; }
+  var counts = getCounts(), drawn = getDrawn();
+  lastDrawIds.forEach(function(id){ if ((counts[id]||0) > 0) counts[id]--; var di = drawn.indexOf(id); if (di >= 0) drawn.splice(di, 1); });
+  starhope.storage.set('counts', counts); starhope.storage.set('drawn', drawn);
+  var h = getHistory(); if (h.length) h.shift(); starhope.storage.set('history', h);
+  lastDrawIds = []; lastResults = []; tierResults = {}; msg = '已撤销上次抽奖';
+}
 function rollCall(){ var pool = rollPool(); if (!pool.length) { msg = '可点名单为空'; rollResults = []; return; } var batch = Math.min(getRollBatch(), pool.length); var winners = drawN(pool, batch, getRollStrategy()); rollResults = winners.map(function(n){ return n.name; }); var h = getRollHistory(); h.unshift({time: nowStr(), names: rollResults.slice()}); if (h.length > 100) h = h.slice(0, 100); starhope.storage.set('rollHistory', h); if (getRollUnique()) { var rd = getRollDrawn(); winners.forEach(function(n){ rd.push(n.id); }); starhope.storage.set('rollDrawn', rd); } }
 function rollGroup(){ var pool = getNames().filter(function(n){ return !n.leave; }); if (!pool.length) { msg = '名单为空'; rollGroups = []; return; } var gn = S('rollGroupCount', 2); if (gn < 1) gn = 1; var shuffled = pool.slice(); for (var i = shuffled.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = shuffled[i]; shuffled[i] = shuffled[j]; shuffled[j] = tmp; } rollGroups = []; for (var k = 0; k < gn; k++) rollGroups.push([]); shuffled.forEach(function(n, idx){ rollGroups[idx % gn].push(n.name); }); }
