@@ -97,7 +97,10 @@ class _StarHopeRootState extends State<StarHopeRoot> {
       final theme = context.read<ThemeProvider>();
       final auth = context.read<AuthProvider>();
       await Future.wait([theme.init(), auth.bootstrap()]);
-      await TrayService.instance.init();
+      await TrayService.instance.init(onLock: () {
+        context.read<AuthProvider>().logout();
+        WindowService.show();
+      });
     });
   }
 

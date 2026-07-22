@@ -12,9 +12,11 @@ class TrayService with TrayListener {
   TrayService._();
 
   bool _initialized = false;
+  void Function()? _onLock;
 
-  Future<void> init() async {
+  Future<void> init({void Function()? onLock}) async {
     if (_initialized) return;
+    _onLock = onLock;
     try {
       await TrayManager.instance.setIcon('assets/icon.ico');
       await TrayManager.instance.setToolTip('StarHope');
@@ -23,6 +25,11 @@ class TrayService with TrayListener {
             key: 'show',
             label: '显示窗口',
             onClick: (_) => WindowService.show()),
+        if (_onLock != null)
+          MenuItem(
+              key: 'lock',
+              label: '锁定账号',
+              onClick: (_) => _onLock!()),
         MenuItem.separator(),
         MenuItem(
             key: 'exit', label: '关闭应用', onClick: (_) => _exit()),
