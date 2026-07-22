@@ -93,7 +93,7 @@ function prizesTab(){
         {type:'sizedbox', width:4},
         {type:'button', icon:'star', variant: p.must ? 'tonal':'outlined', label: p.must ? '取消必中':'设必中', onTap:'toggleMust:' + p.id},
       ])},
-    ]};
+    ]);
   }) : [muted('还没有奖品，先添加几个')];
   return col([
     card('添加奖品', [
@@ -192,7 +192,7 @@ function rollListTab(){
         {type:'sizedbox', width:4},
         {type:'button', icon:'delete', variant:'outlined', onTap:'removeName:' + n.id},
       ]},
-    ]};
+    ]);
   }) : [muted('名单为空，添加人员')];
   return col([
     card('添加人员', [
@@ -242,7 +242,7 @@ function schemeTab(){
         {type:'sizedbox', width:4},
         {type:'button', icon:'delete', variant:'outlined', onTap:'delScheme:' + i},
       ]},
-    ]};
+    ]);
   }) : [muted('还没有方案')];
   return col([
     card('保存抽奖方案', [

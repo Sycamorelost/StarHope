@@ -1,10 +1,10 @@
 {
   "app": "StarHope", "magic": "STARHOPE_PLUGIN", "format_version": 1,
-  "id": "shp.sycamorelost.lottery", "name": "抽奖 & 点名", "version": "4.0.0",
+  "id": "shp.sycamorelost.lottery", "name": "抽奖 & 点名", "version": "4.1.0",
   "description": "全量抽奖(权重/限中/排除/必中/多策略/批量/概率进度条/方案/导入导出)+点名(名单/批量/请假/不重复/历史)。统一字体层级，无花哨符号。",
   "entry": "main.js", "permissions": ["log", "storage"],
   "author": { "signed": false },
   "extensions": [ { "type": "tool_page", "id": "main", "title": "抽奖&点名", "icon": "casino" } ],
   "params_schema": {},
-  "files": [ { "name": "main.js", "sha256": "eff5da2d23949f2550aade0f27853314f6f480cbb2416697daf38fe284528e22", "size": 21939 } ]
+  "files": [ { "name": "main.js", "sha256": "40a532ddd568b82f708e5165c8bc0185904074b866f214215778593edd26379f", "size": 21939 } ]
 }
