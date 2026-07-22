@@ -8,6 +8,7 @@ import '../../providers/practice_exam_provider.dart';
 import '../../providers/question_provider.dart';
 import '../../providers/reader_provider.dart';
 import '../common/glass.dart';
+import '../common/page_transitions.dart';
 import '../common/theme.dart';
 import '../common/window_title_bar.dart';
 import 'ai_page.dart';
@@ -209,7 +210,12 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
             ),
           ),
         ),
-        Expanded(child: _pages[index]),
+        Expanded(
+          child: FadeThroughSwitcher<int>(
+            switchKey: ValueKey<int>(index),
+            child: _pages[index],
+          ),
+        ),
       ],
     );
   }
@@ -219,7 +225,12 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     final index = nav.tab.index;
     return Column(
       children: [
-        Expanded(child: _pages[index]),
+        Expanded(
+          child: FadeThroughSwitcher<int>(
+            switchKey: ValueKey<int>(index),
+            child: _pages[index],
+          ),
+        ),
         NavigationBar(
           selectedIndex: index,
           onDestinationSelected: (i) => nav.switchTo(HomeTab.values[i]),

@@ -11,10 +11,19 @@ import 'providers/reader_provider.dart';
 import 'providers/theme_provider.dart';
 import 'services/window_service.dart';
 import 'views/auth/auth_gate.dart';
+import 'views/common/page_transitions.dart';
 import 'views/common/theme.dart';
 
 export 'views/common/theme.dart';
 export 'views/common/glass.dart';
+
+/// 全平台 push 过渡：从右滑入 + 淡入（[SlidePageTransitionsBuilder]）。
+final PageTransitionsTheme _pageTransitionsTheme = PageTransitionsTheme(
+  builders: {
+    for (final p in TargetPlatform.values)
+      p: const SlidePageTransitionsBuilder(),
+  },
+);
 
 class StarHopeApp extends StatelessWidget {
   const StarHopeApp({super.key});
@@ -35,8 +44,12 @@ class StarHopeApp extends StatelessWidget {
         builder: (context, theme, _) => MaterialApp(
           title: 'StarHope',
           debugShowCheckedModeBanner: false,
-          theme: StarHopeTheme.light(),
-          darkTheme: StarHopeTheme.dark(),
+          theme: StarHopeTheme.light().copyWith(
+            pageTransitionsTheme: _pageTransitionsTheme,
+          ),
+          darkTheme: StarHopeTheme.dark().copyWith(
+            pageTransitionsTheme: _pageTransitionsTheme,
+          ),
           themeMode: theme.mode,
           home: const StarHopeRoot(),
           // 全局圆角裁剪 + F11 全屏快捷键
@@ -87,21 +100,30 @@ class _StarHopeRootState extends State<StarHopeRoot> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    if (auth.loading) {
-      return Scaffold(
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFE0E7FF), Color(0xFFF5F3FF), Color(0xFFEDE9FE)],
-            ),
+    return FadeThroughSwitcher<bool>(
+      switchKey: ValueKey<bool>(auth.loading),
+      child: auth.loading ? _bootstrapLoading() : const AuthGate(),
+    );
+  }
+
+  /// 启动引导 loading（深蓝夜空，与登录页/加载页统一色调，避免浅→深跳变）。
+  Widget _bootstrapLoading() {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0b1026), Color(0xFF141a3a), Color(0xFF1a1140)],
           ),
-          child: const Center(child: CircularProgressIndicator()),
         ),
-      );
-    }
-    return const AuthGate();
+        child: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8ea2ff)),
+          ),
+        ),
+      ),
+    );
   }
 }
 

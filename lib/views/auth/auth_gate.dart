@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/practice_exam_provider.dart';
 import '../../providers/question_provider.dart';
 import '../../providers/reader_provider.dart';
+import '../common/page_transitions.dart';
 import '../common/starry_sky.dart';
 import '../home/home_shell.dart';
 import 'login_page.dart';
@@ -18,11 +19,16 @@ class AuthGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    if (!auth.isLoggedIn) {
-      return auth.hasUser ? const LoginPage() : const RegisterPage();
-    }
-    // 登录后加载各模块数据并注入主密钥
-    return const _PostLoginLoader(child: HomeShell());
+    // 切换键：登录态 + 是否有注册用户 → 注册 / 登录 / 主页加载，渐变过渡
+    final stage = auth.isLoggedIn
+        ? 'home'
+        : (auth.hasUser ? 'login' : 'register');
+    return FadeThroughSwitcher<String>(
+      switchKey: ValueKey<String>(stage),
+      child: stage == 'home'
+          ? const _PostLoginLoader(child: HomeShell())
+          : (stage == 'login' ? const LoginPage() : const RegisterPage()),
+    );
   }
 }
 
@@ -76,12 +82,9 @@ class _PostLoginLoaderState extends State<_PostLoginLoader>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 500),
-      child: _ready
-          ? KeyedSubtree(
-              key: const ValueKey('home'), child: widget.child)
-          : KeyedSubtree(key: const ValueKey('loader'), child: _loader()),
+    return FadeThroughSwitcher<String>(
+      switchKey: ValueKey<String>(_ready ? 'home' : 'loader'),
+      child: _ready ? widget.child : _loader(),
     );
   }
 
