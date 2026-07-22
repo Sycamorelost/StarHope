@@ -197,10 +197,25 @@ function rollListTab(){
 function historyTab(){
   var history = getHistory();
   var rollHistory = getRollHistory();
+  var counts = getCounts();
+  var prizes = getPrizes();
+  var stats = prizes.filter(function(p){ return (counts[p.id]||0) > 0; });
+  var maxC = stats.reduce(function(m, p){ return Math.max(m, counts[p.id]||0); }, 1);
+  var statRows = stats.length ? stats.map(function(p){
+    var c = counts[p.id] || 0;
+    return {type:'column', crossAxisAlignment:'stretch', children: [
+      {type:'row', children:[body(p.name, null), {type:'spacer'}, body(c + ' 次', 'primary')]},
+      gap(2),
+      {type:'progress', value: c / maxC, color:'primary'},
+      gap(5),
+    ]};
+  }) : [muted('暂无中签数据')];
   var hRows = history.slice(0,15).map(function(h){ return {type:'row', children:[muted(h.time), {type:'sizedbox', width:8}, body(h.names.join('、'), null)]}; });
   var rRows = rollHistory.slice(0,15).map(function(h){ return {type:'row', children:[muted(h.time), {type:'sizedbox', width:8}, body(h.names.join('、'), null)]}; });
   return col([
-    card('抽奖历史（' + history.length + '）', [{type:'button', icon:'delete', variant:'outlined', label:'清空', onTap:'clearHistory'}, gap(6)].concat(hRows).concat([{type:'divider'}, muted('累计抽奖 ' + history.length + ' 次')])),
+    card('中签统计（共 ' + history.length + ' 次抽奖）', statRows),
+    gap(10),
+    card('抽奖历史（' + history.length + '）', [{type:'button', icon:'delete', variant:'outlined', label:'清空', onTap:'clearHistory'}, gap(6)].concat(hRows)),
     gap(10),
     card('点名历史（' + rollHistory.length + '）', [{type:'button', icon:'delete', variant:'outlined', label:'清空', onTap:'clearRollHistory'}, gap(6)].concat(rRows)),
   ]);
