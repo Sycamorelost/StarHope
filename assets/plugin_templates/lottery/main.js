@@ -40,7 +40,7 @@ function h2(t){ return {type:'text', text:t, size:14, weight:'bold'}; }
 function body(t, color){ return {type:'text', text:t, size:13, color: color || null}; }
 function muted(t){ return {type:'text', text:t, size:11, color:'muted'}; }
 function gap(h){ return {type:'sizedbox', height: h||8}; }
-function resultText(t){ return {type:'text', text:t, size:22, weight:'bold', color:'primary'}; }
+function resultText(t){ return {type:'text', text:t, size:18, weight:'bold', color:'primary'}; }
 
 function render(){
   return col([ header(), gap(8), tabBar(), gap(12),
