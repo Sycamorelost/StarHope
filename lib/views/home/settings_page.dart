@@ -17,7 +17,6 @@ import '../../services/file_storage_service.dart';
 import '../../services/secure_storage_service.dart';
 import '../../services/storage_config.dart';
 import '../common/glass.dart';
-import '../common/user_avatar.dart';
 import '../common/disclaimer.dart';
 import 'widgets/import_export_dialogs.dart';
 
@@ -34,82 +33,15 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final theme = context.watch<ThemeProvider>();
-    final user = auth.user;
     return Scaffold(
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('我的',
+          Text('设置',
               style: Theme.of(context)
                   .textTheme
                   .headlineSmall
                   ?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          // 用户卡片
-          GlassCard(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: () => _pickAvatar(context, auth),
-                  child: Stack(
-                    children: [
-                      UserAvatar(
-                        avatarPath: user?.avatarPath,
-                        nickname: user?.nickname ?? '',
-                        radius: 32,
-                      ),
-                      Positioned(
-                        right: -2,
-                        bottom: -2,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.camera_alt,
-                              size: 14,
-                              color: Theme.of(context).colorScheme.onPrimary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(user?.nickname ?? '',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
-                      Text('@${user?.account ?? ''}',
-                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 6,
-                        children: [
-                          if (user?.github != null &&
-                              user!.github!.isNotEmpty)
-                            _socialChip('GitHub', user.github!),
-                          if (user?.qq != null && user!.qq!.isNotEmpty)
-                            _socialChip('QQ', user.qq!),
-                          if (user?.wechat != null &&
-                              user!.wechat!.isNotEmpty)
-                            _socialChip('微信', user.wechat!),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () => _editProfile(context, auth),
-                ),
-              ],
-            ),
-          ),
           const SizedBox(height: 16),
           // 主题
           GlassCard(
@@ -484,165 +416,6 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
     if (chosen != null) theme.setCloseAction(chosen);
-  }
-
-  Widget _socialChip(String k, String v) => Chip(
-        label: Text('$k: $v', style: const TextStyle(fontSize: 11)),
-        padding: EdgeInsets.zero,
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        visualDensity: VisualDensity.compact,
-      );
-
-  Future<String?> _pickAvatarFile() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        withData: false,
-      );
-      if (result == null || result.files.single.path == null) return null;
-      final newPath = await FileStorageService.saveAvatar(result.files.single.path!);
-      return newPath;
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
-      }
-      return null;
-    }
-  }
-
-  Future<void> _pickAvatar(BuildContext context, AuthProvider auth) async {
-    final newPath = await _pickAvatarFile();
-    if (newPath == null) return;
-    await auth.updateProfile(avatarPath: newPath);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('头像已更新')));
-    }
-  }
-
-  void _editProfile(BuildContext context, AuthProvider auth) async {
-    final user = auth.user!;
-    final nickname = TextEditingController(text: user.nickname);
-    final github = TextEditingController(text: user.github ?? '');
-    final qq = TextEditingController(text: user.qq ?? '');
-    final wechat = TextEditingController(text: user.wechat ?? '');
-    final newPass = TextEditingController();
-    final oldPass = TextEditingController();
-    String? avatarPath = user.avatarPath;
-
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (ctx, set) => AlertDialog(
-        title: const Text('编辑资料'),
-        content: SizedBox(
-          width: 360,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                GestureDetector(
-                  onTap: () async {
-                    final picked = await _pickAvatarFile();
-                    if (picked != null) set(() => avatarPath = picked);
-                  },
-                  child: Stack(
-                    children: [
-                      UserAvatar(
-                          avatarPath: avatarPath,
-                          nickname: nickname.text.isEmpty ? user.nickname : nickname.text,
-                          radius: 36),
-                      Positioned(
-                        right: -2,
-                        bottom: -2,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Theme.of(ctx).colorScheme.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.camera_alt,
-                              size: 14,
-                              color: Theme.of(ctx).colorScheme.onPrimary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text('点击更换头像（≤2MB）',
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
-                const SizedBox(height: 12),
-                TextField(
-                    controller: nickname,
-                    decoration: const InputDecoration(labelText: '昵称'),
-                    onChanged: (_) => set(() {})),
-                const SizedBox(height: 8),
-                TextField(
-                    controller: github,
-                    decoration: const InputDecoration(labelText: 'GitHub')),
-                const SizedBox(height: 8),
-                TextField(
-                    controller: qq,
-                    decoration: const InputDecoration(labelText: 'QQ')),
-                const SizedBox(height: 8),
-                TextField(
-                    controller: wechat,
-                    decoration: const InputDecoration(labelText: '微信')),
-                const Divider(),
-                TextField(
-                    controller: oldPass,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                        labelText: '原密码（改密时填写）')),
-                const SizedBox(height: 8),
-                TextField(
-                    controller: newPass,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                        labelText: '新密码（留空则不改）')),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消')),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('保存')),
-        ],
-      ),
-      ),
-    );
-    if (saved != true) return;
-
-    try {
-      await auth.updateProfile(
-        nickname: nickname.text,
-        avatarPath: avatarPath,
-        github: github.text,
-        qq: qq.text,
-        wechat: wechat.text,
-        newPassword:
-            newPass.text.isEmpty ? null : newPass.text,
-        oldPassword:
-            oldPass.text.isEmpty ? null : oldPass.text,
-      );
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('资料已更新')));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('保存失败：$e')));
-      }
-    }
   }
 
   Future<Set<String>?> _pickBackupModules(BuildContext context) {
