@@ -37,7 +37,7 @@ class AppDatabase {
     final dbPath = p.join(dir, 'starhope.db');
     _db = await openDatabase(
       dbPath,
-      version: 7,
+      version: 8,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -264,6 +264,22 @@ class AppDatabase {
       )
     ''');
     batch.execute('CREATE INDEX idx_notes_material ON notes(material_id)');
+    // 插件
+    batch.execute('''
+      CREATE TABLE plugins (
+        id TEXT PRIMARY KEY,
+        dir_name TEXT NOT NULL,
+        display_name TEXT NOT NULL,
+        version TEXT,
+        author TEXT,
+        description TEXT,
+        manifest_sha256 TEXT,
+        enabled INTEGER DEFAULT 0,
+        params_json TEXT,
+        installed_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
     await batch.commit(noResult: true);
   }
 
@@ -364,6 +380,24 @@ class AppDatabase {
           'ALTER TABLE exam_rules ADD COLUMN pass_rate REAL DEFAULT 0.6');
       await db.execute(
           'ALTER TABLE exam_results ADD COLUMN passed INTEGER DEFAULT 0');
+    }
+    // v8：插件系统
+    if (oldVersion < 8) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS plugins (
+          id TEXT PRIMARY KEY,
+          dir_name TEXT NOT NULL,
+          display_name TEXT NOT NULL,
+          version TEXT,
+          author TEXT,
+          description TEXT,
+          manifest_sha256 TEXT,
+          enabled INTEGER DEFAULT 0,
+          params_json TEXT,
+          installed_at INTEGER NOT NULL,
+          updated_at INTEGER
+        )
+      ''');
     }
   }
 
@@ -829,6 +863,56 @@ class AppDatabase {
     await d.delete('notes', where: 'id = ?', whereArgs: [id]);
   }
 
+  // ============ 插件 ============
+  Future<List<Map<String, Object?>>> loadPlugins() async {
+    final d = await db;
+    return d.query('plugins', orderBy: 'installed_at DESC');
+  }
+
+  Future<Map<String, Object?>?> getPlugin(String id) async {
+    final d = await db;
+    final rows = await d.query('plugins',
+        where: 'id = ?', whereArgs: [id], limit: 1);
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  Future<void> upsertPlugin(Map<String, Object?> plugin) async {
+    final d = await db;
+    await d.insert('plugins', plugin,
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> setPluginEnabled(String id, bool enabled) async {
+    final d = await db;
+    await d.update(
+      'plugins',
+      {
+        'enabled': enabled ? 1 : 0,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> setPluginParams(String id, String paramsJson) async {
+    final d = await db;
+    await d.update(
+      'plugins',
+      {
+        'params_json': paramsJson,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> deletePlugin(String id) async {
+    final d = await db;
+    await d.delete('plugins', where: 'id = ?', whereArgs: [id]);
+  }
+
   // ============ 备份/恢复 ============
   Future<void> clearAll() async {
     final d = await db;
@@ -847,6 +931,7 @@ class AppDatabase {
         'ai_messages',
         'reading_materials',
         'notes',
+        'plugins',
       ]) {
         await txn.delete(t);
       }

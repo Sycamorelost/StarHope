@@ -68,6 +68,13 @@ class StorageConfig {
     if (await matsDir.exists()) {
       count += await _copyDir(matsDir, Directory(p.join(newRoot, 'materials')));
     }
+
+    // plugins 目录（插件）
+    final pluginsDir = Directory(p.join(oldRoot, 'plugins'));
+    if (await pluginsDir.exists()) {
+      count +=
+          await _copyDir(pluginsDir, Directory(p.join(newRoot, 'plugins')));
+    }
     return count;
   }
 
