@@ -64,6 +64,11 @@ class CryptoService {
           String plain, String saltHex, String expectedHash) =>
       _constTimeEq(pbkdf2Hex(plain, saltHex), expectedHash);
 
+  /// 校验已派生的密钥与期望哈希是否一致（常量时间比较）。
+  /// 用于复用一次 PBKDF2 派生结果同时做密码校验与主密钥（避免重复计算）。
+  static bool verifyDerivedHex(Uint8List derived, String expectedHash) =>
+      _constTimeEq(_toHex(derived), expectedHash);
+
   // ---------------- AES-256-GCM ----------------
 
   /// 加密明文，返回 "iv(hex):ciphertext+tag(base64)"
