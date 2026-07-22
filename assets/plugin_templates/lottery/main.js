@@ -1,9 +1,9 @@
-// StarHope 幸运抽奖 & 点名插件 (shp.sycamorelost.lottery) v3
-// 抽奖：奖品管理(权重/限中/排除/必中) · 多策略(均匀/权重/不重复) · 批量 · 概率预览 · 方案 · 导入导出
-// 点名：名单管理 · 随机/不重复/批量 · 排除请假 · 历史
-// 退出按钮。本地持久化 via starhope.storage。
+// StarHope 抽奖 & 点名 (shp.sycamorelost.lottery) v4
+// 抽奖：奖品管理(权重/限中/排除/必中) · 多策略 · 批量 · 概率进度条 · 方案 · 导入导出
+// 点名：名单 · 批量 · 请假 · 不重复 · 历史。退出按钮。本地持久化。
+// UI：无花哨符号，字体层级统一（标题18/卡片14/正文13/辅助11/结果22）。
 
-starhope.title = '🎰 抽奖 & 点名';
+starhope.title = '抽奖 & 点名';
 
 var draft = { name: '', weight: '1', maxCount: '0' };
 var rollDraft = '';
@@ -32,238 +32,249 @@ function nowStr(){ var d = new Date(); function p(n){ return n<10?'0'+n:n; } ret
 function uid(){ return Math.random().toString(36).slice(2,9); }
 function assign(a, b){ var o = {}; for (var k in a) o[k] = a[k]; for (var k2 in b) o[k2] = b[k2]; return o; }
 
+// 统一字体节点
+function h1(t){ return {type:'text', text:t, size:18, weight:'bold'}; }
+function h2(t){ return {type:'text', text:t, size:14, weight:'bold'}; }
+function body(t, color){ return {type:'text', text:t, size:13, color: color || null}; }
+function muted(t){ return {type:'text', text:t, size:11, color:'muted'}; }
+function gap(h){ return {type:'sizedbox', height: h||8}; }
+function resultText(t){ return {type:'text', text:t, size:22, weight:'bold', color:'primary'}; }
+
 function render(){
   return { type: 'column', crossAxisAlignment: 'stretch', children: [
-    header(),
-    {type: 'sizedbox', height: 8},
-    tabBar(),
-    {type: 'sizedbox', height: 10},
+    header(), gap(8), tabBar(), gap(10),
     tab === 'prizes' ? prizesTab() :
     tab === 'roll' ? rollTab() :
     tab === 'rollList' ? rollListTab() :
     tab === 'history' ? historyTab() :
-    tab === 'scheme' ? schemeTab() :
-    drawTab(),
+    tab === 'scheme' ? schemeTab() : drawTab(),
   ]};
 }
 
 function header(){
-  return {type: 'row', children: [
-    {type: 'text', text: '🎰 抽奖 & 点名', size: 20, weight: 'bold'},
-    {type: 'spacer'},
-    {type: 'button', icon: 'casino', variant: 'tonal', label: '抽奖', onTap: 'goto:draw'},
-    {type: 'sizedbox', width: 6},
-    {type: 'button', icon: 'refresh', variant: 'outlined', label: '退出', onTap: '__exit__'},
+  return {type:'row', children: [
+    h1('抽奖 & 点名'),
+    {type:'spacer'},
+    {type:'button', icon:'casino', variant:'tonal', label:'抽奖', onTap:'goto:draw'},
+    {type:'sizedbox', width:6},
+    {type:'button', icon:'refresh', variant:'outlined', label:'退出', onTap:'__exit__'},
   ]};
 }
 function tabBar(){
-  return {type: 'wrap', children: [
+  return {type:'wrap', children: [
     tabBtn('draw','抽奖'), tabBtn('prizes','奖品'),
     tabBtn('roll','点名'), tabBtn('rollList','名单'),
     tabBtn('history','历史'), tabBtn('scheme','方案'),
   ]};
 }
-function tabBtn(t, label){ return {type: 'sizedbox', height: 36, child: {type: 'segmented', value: tab === t ? t : '~~', options: [{value: t, label: label}], onChanged: 'setTab'}}; }
+function tabBtn(t, label){
+  return {type:'sizedbox', height:36, child:{type:'segmented', value: tab===t ? t : '~~', options:[{value:t, label:label}], onChanged:'setTab'}};
+}
 
 function prizesTab(){
   var prizes = getPrizes();
   var counts = getCounts();
   var list = prizes.length ? prizes.map(function(p){
-    var chips = [ chip('权重 ' + (p.weight||1)), chip(p.exclude ? '🚫排除' : '✅参与') ];
-    if (p.must) chips.push(chip('🎯必中'));
+    var chips = [ chip('权重 ' + (p.weight||1)), chip(p.exclude ? '已排除' : '参与中') ];
+    if (p.must) chips.push(badge('必中', 'primary'));
     if (p.maxCount > 0) chips.push(chip('限中 ' + p.maxCount));
-    return {type: 'card', padding: 8, child: {type: 'column', crossAxisAlignment: 'stretch', children: [
-      {type: 'row', children: [
-        {type: 'text', text: p.name, weight: 'bold'},
-        {type: 'spacer'},
-        {type: 'text', text: '已中 ' + (counts[p.id]||0), size: 11, color: 'muted'},
-        {type: 'sizedbox', width: 6},
-        {type: 'button', icon: 'delete', variant: 'outlined', onTap: 'remove:' + p.id},
+    return card(null, [
+      {type:'row', children: [
+        body(p.name, null),
+        {type:'spacer'},
+        muted('已中 ' + (counts[p.id]||0)),
+        {type:'sizedbox', width:6},
+        {type:'button', icon:'delete', variant:'outlined', onTap:'remove:' + p.id},
       ]},
-      {type: 'sizedbox', height: 4},
-      {type: 'wrap', children: chips.concat([
-        {type: 'sizedbox', width: 4},
-        {type: 'button', icon: p.exclude ? 'add' : 'remove', variant: 'outlined', label: p.exclude ? '纳入' : '排除', onTap: 'toggleExclude:' + p.id},
-        {type: 'sizedbox', width: 4},
-        {type: 'button', icon: 'star', variant: p.must ? 'tonal' : 'outlined', label: p.must ? '取消必中' : '设必中', onTap: 'toggleMust:' + p.id},
+      gap(4),
+      {type:'wrap', children: chips.concat([
+        {type:'sizedbox', width:4},
+        {type:'button', icon: p.exclude ? 'add':'remove', variant:'outlined', label: p.exclude ? '纳入':'排除', onTap:'toggleExclude:' + p.id},
+        {type:'sizedbox', width:4},
+        {type:'button', icon:'star', variant: p.must ? 'tonal':'outlined', label: p.must ? '取消必中':'设必中', onTap:'toggleMust:' + p.id},
       ])},
-    ]}};
-  }) : [{type: 'text', text: '还没有奖品，先添加几个～', color: 'muted', size: 12}];
-  return {type: 'column', crossAxisAlignment: 'stretch', children: [
-    card('➕ 添加奖品', [
-      {type: 'row', children: [
-        {type: 'expanded', child: {type: 'textfield', key: 'pname', label: '奖品名', value: draft.name, onChanged: 'setName'}},
-        {type: 'sizedbox', width: 6},
-        {type: 'sizedbox', width: 60, child: {type: 'textfield', key: 'pw', label: '权重', value: draft.weight, keyboard: 'number', onChanged: 'setWeight'}},
-        {type: 'sizedbox', width: 6},
-        {type: 'sizedbox', width: 72, child: {type: 'textfield', key: 'pm', label: '限中次数', value: draft.maxCount, keyboard: 'number', onChanged: 'setMax'}},
-        {type: 'sizedbox', width: 6},
-        {type: 'button', icon: 'add', label: '加', onTap: 'add'},
+    ]};
+  }) : [muted('还没有奖品，先添加几个')];
+  return col([
+    card('添加奖品', [
+      {type:'row', children: [
+        {type:'expanded', child:{type:'textfield', key:'pname', label:'奖品名', value:draft.name, onChanged:'setName'}},
+        {type:'sizedbox', width:6},
+        {type:'sizedbox', width:60, child:{type:'textfield', key:'pw', label:'权重', value:draft.weight, keyboard:'number', onChanged:'setWeight'}},
+        {type:'sizedbox', width:6},
+        {type:'sizedbox', width:72, child:{type:'textfield', key:'pm', label:'限中次数', value:draft.maxCount, keyboard:'number', onChanged:'setMax'}},
+        {type:'sizedbox', width:6},
+        {type:'button', icon:'add', label:'加', onTap:'add'},
       ]},
-      {type: 'sizedbox', height: 4},
-      {type: 'text', text: '限中次数：0=无限，>0=抽满即移出奖池', size: 10, color: 'muted'},
+      gap(4),
+      muted('限中次数：0 = 无限，>0 = 抽满即移出奖池'),
     ]),
-    {type: 'sizedbox', height: 10},
-    card('📋 奖品列表 (' + prizes.length + ')', [{type: 'button', icon: 'delete', variant: 'outlined', label: '清空全部', onTap: 'clearPrizes'}, {type: 'sizedbox', height: 6}].concat(list)),
-  ]};
+    gap(10),
+    card('奖品列表（' + prizes.length + '）', [{type:'button', icon:'delete', variant:'outlined', label:'清空全部', onTap:'clearPrizes'}, gap(6)].concat(list)),
+  ]);
 }
 
 function drawTab(){
   var prizes = getPrizes();
   var pool = poolInfo();
   var batch = Math.min(getBatch(), pool.length);
-  var resultKids = lastResults.length ? [{type: 'center', child: {type: 'column', children: lastResults.map(function(n, i){ return {type: 'text', text: (i+1) + '. ' + n, size: 22, weight: 'bold', color: 'primary'}; })}}] : [{type: 'sizedbox'}];
-  var prev = {type: 'sizedbox'};
+  var resultKids = lastResults.length ? [{type:'center', child:{type:'column', children: lastResults.map(function(n, i){ return resultText((i+1) + '. ' + n); })}}] : [gap(0)];
+  var prev = gap(0);
   if (getStrategy() === 'weighted' && pool.length) {
     var total = pool.reduce(function(a, x){ return a + (parseInt(x.weight)||1); }, 0);
-    prev = card('📊 中签概率（按权重）', pool.map(function(p){
-      var pct = total > 0 ? ((parseInt(p.weight)||1) / total * 100).toFixed(1) : '0';
-      return {type: 'row', children: [{type: 'text', text: p.name}, {type: 'spacer'}, {type: 'text', text: pct + '%', color: 'primary', weight: 'bold'}]};
+    prev = card('中签概率（按权重）', pool.map(function(p){
+      var frac = total > 0 ? (parseInt(p.weight)||1) / total : 0;
+      var pct = (frac * 100).toFixed(1);
+      return {type:'column', crossAxisAlignment:'stretch', children: [
+        {type:'row', children: [body(p.name, null), {type:'spacer'}, body(pct + '%', 'primary')]},
+        gap(3),
+        {type:'progress', value: frac, color:'primary'},
+        gap(6),
+      ]};
     }));
   }
-  return {type: 'column', crossAxisAlignment: 'stretch', children: [
-    card('⚙️ 抽奖设置', [
-      {type: 'text', text: '策略', weight: 'bold'},
-      {type: 'sizedbox', height: 4},
-      {type: 'segmented', value: getStrategy(), options: [{value: 'uniform', label: '均匀'}, {value: 'weighted', label: '按权重'}], onChanged: 'setStrategy'},
-      {type: 'sizedbox', height: 8},
-      {type: 'checkbox', value: getUnique(), label: '不重复抽取（抽中移出奖池）', onChanged: 'setUnique'},
-      {type: 'sizedbox', height: 8},
-      {type: 'row', children: [
-        {type: 'text', text: '每次抽取个数：'},
-        {type: 'sizedbox', width: 70, child: {type: 'textfield', key: 'batch', label: '个数', value: '' + getBatch(), keyboard: 'number', onChanged: 'setBatch'}},
-      ]},
-      (getUnique() || pool.length < prizes.length) ? {type: 'text', text: '奖池剩余 ' + pool.length + ' / ' + prizes.length, size: 11, color: 'muted'} : {type: 'sizedbox'},
+  return col([
+    card('抽奖设置', [
+      h2('策略'), gap(4),
+      {type:'segmented', value:getStrategy(), options:[{value:'uniform', label:'均匀随机'}, {value:'weighted', label:'按权重'}], onChanged:'setStrategy'},
+      gap(8),
+      {type:'checkbox', value:getUnique(), label:'不重复抽取（抽中移出奖池）', onChanged:'setUnique'},
+      gap(8),
+      {type:'row', children: [body('每次抽取个数：'), {type:'sizedbox', width:70, child:{type:'textfield', key:'batch', label:'个数', value:''+getBatch(), keyboard:'number', onChanged:'setBatch'}}]},
+      (getUnique() || pool.length < prizes.length) ? muted('奖池剩余 ' + pool.length + ' / ' + prizes.length) : gap(0),
     ]),
-    {type: 'sizedbox', height: 10},
-    card('🎉 抽奖', [
-      {type: 'button', icon: 'casino', label: pool.length ? '🎯 抽取 ' + batch + ' 个' : '奖池为空', onTap: 'draw', expanded: true},
-      {type: 'sizedbox', height: 8},
-      getUnique() ? {type: 'button', icon: 'refresh', variant: 'outlined', label: '重置奖池与限中', onTap: 'resetDrawn'} : {type: 'sizedbox'},
-      {type: 'sizedbox', height: 10},
-    ].concat(resultKids).concat([msg ? {type: 'text', text: msg, color: 'error', size: 12} : {type: 'sizedbox'}])),
-    {type: 'sizedbox', height: 10},
+    gap(10),
+    card(null, [
+      {type:'button', icon:'casino', label: pool.length ? '抽取 ' + batch + ' 个' : '奖池为空', onTap:'draw', expanded:true},
+      gap(8),
+      getUnique() ? {type:'button', icon:'refresh', variant:'outlined', label:'重置奖池与限中', onTap:'resetDrawn'} : gap(0),
+      gap(10),
+    ].concat(resultKids).concat([msg ? body(msg, 'error') : gap(0)])),
+    gap(10),
     prev,
-  ]};
+  ]);
 }
 
-// ===== 点名 =====
 function rollTab(){
   var names = getNames();
   var pool = rollPool();
   var batch = Math.min(getRollBatch(), pool.length);
-  var resultKids = rollResults.length ? [{type: 'center', child: {type: 'column', children: rollResults.map(function(n, i){ return {type: 'text', text: (i+1) + '. ' + n, size: 22, weight: 'bold', color: 'primary'}; })}}] : [{type: 'sizedbox'}];
-  return {type: 'column', crossAxisAlignment: 'stretch', children: [
-    card('⚙️ 点名设置', [
-      {type: 'checkbox', value: getRollUnique(), label: '不重复点名（点过的人本轮不再点）', onChanged: 'setRollUnique'},
-      {type: 'sizedbox', height: 8},
-      {type: 'row', children: [
-        {type: 'text', text: '每次点名人数：'},
-        {type: 'sizedbox', width: 70, child: {type: 'textfield', key: 'rbatch', label: '人数', value: '' + getRollBatch(), keyboard: 'number', onChanged: 'setRollBatch'}},
-      ]},
-      pool.length < names.length ? {type: 'text', text: '可点 ' + pool.length + ' / ' + names.length + '（已排除请假或已点）', size: 11, color: 'muted'} : {type: 'sizedbox'},
-      {type: 'sizedbox', height: 6},
-      {type: 'button', icon: 'refresh', variant: 'outlined', label: '重置点名记录（开始新一轮）', onTap: 'resetRollDrawn'},
+  var resultKids = rollResults.length ? [{type:'center', child:{type:'column', children: rollResults.map(function(n, i){ return resultText((i+1) + '. ' + n); })}}] : [gap(0)];
+  return col([
+    card('点名设置', [
+      {type:'checkbox', value:getRollUnique(), label:'不重复点名（本轮点过不再点）', onChanged:'setRollUnique'},
+      gap(8),
+      {type:'row', children: [body('每次点名人数：'), {type:'sizedbox', width:70, child:{type:'textfield', key:'rbatch', label:'人数', value:''+getRollBatch(), keyboard:'number', onChanged:'setRollBatch'}}]},
+      pool.length < names.length ? muted('可点 ' + pool.length + ' / ' + names.length + '（已排除请假或已点）') : gap(0),
+      gap(6),
+      {type:'button', icon:'refresh', variant:'outlined', label:'重置点名记录（开始新一轮）', onTap:'resetRollDrawn'},
     ]),
-    {type: 'sizedbox', height: 10},
-    card('🎯 随机点名', [
-      {type: 'button', icon: 'shuffle', label: pool.length ? '🎲 点 ' + batch + ' 人' : '名单为空', onTap: 'rollCall', expanded: true},
-      {type: 'sizedbox', height: 10},
-    ].concat(resultKids).concat([msg ? {type: 'text', text: msg, color: 'error', size: 12} : {type: 'sizedbox'}])),
-  ]};
+    gap(10),
+    card(null, [
+      {type:'button', icon:'shuffle', label: pool.length ? '随机点 ' + batch + ' 人' : '名单为空', onTap:'rollCall', expanded:true},
+      gap(10),
+    ].concat(resultKids).concat([msg ? body(msg, 'error') : gap(0)])),
+  ]);
 }
+
 function rollListTab(){
   var names = getNames();
   var rollDrawn = getRollDrawn();
   var list = names.length ? names.map(function(n){
     var gone = n.leave || (getRollUnique() && rollDrawn.indexOf(n.id) >= 0);
-    return {type: 'card', padding: 8, child: {type: 'row', children: [
-      {type: 'text', text: n.name, weight: gone ? 'normal' : 'bold', color: gone ? 'muted' : null},
-      {type: 'spacer'},
-      n.leave ? chip('请假') : {type: 'sizedbox'},
-      {type: 'sizedbox', width: 4},
-      {type: 'button', icon: n.leave ? 'add' : 'remove', variant: 'outlined', label: n.leave ? '销假' : '请假', onTap: 'toggleLeave:' + n.id},
-      {type: 'sizedbox', width: 4},
-      {type: 'button', icon: 'delete', variant: 'outlined', onTap: 'removeName:' + n.id},
-    ]}};
-  }) : [{type: 'text', text: '名单为空，添加人员～', color: 'muted', size: 12}];
-  return {type: 'column', crossAxisAlignment: 'stretch', children: [
-    card('➕ 添加人员', [
-      {type: 'row', children: [
-        {type: 'expanded', child: {type: 'textfield', key: 'rname', label: '姓名', value: rollDraft, onChanged: 'setRollDraft'}},
-        {type: 'sizedbox', width: 6},
-        {type: 'button', icon: 'add', label: '加', onTap: 'addName'},
+    return card(null, [
+      {type:'row', children: [
+        body(n.name, gone ? 'muted' : null),
+        {type:'spacer'},
+        n.leave ? badge('请假', 'error') : gap(0),
+        {type:'sizedbox', width:4},
+        {type:'button', icon: n.leave ? 'add':'remove', variant:'outlined', label: n.leave ? '销假':'请假', onTap:'toggleLeave:' + n.id},
+        {type:'sizedbox', width:4},
+        {type:'button', icon:'delete', variant:'outlined', onTap:'removeName:' + n.id},
       ]},
-      {type: 'sizedbox', height: 6},
-      {type: 'row', children: [
-        {type: 'expanded', child: {type: 'textfield', key: 'rbulk', label: '批量输入（逗号/换行分隔）', onChanged: 'setBulk'}},
-        {type: 'sizedbox', width: 6},
-        {type: 'button', icon: 'list', label: '批量加', onTap: 'addBulk'},
+    ]};
+  }) : [muted('名单为空，添加人员')];
+  return col([
+    card('添加人员', [
+      {type:'row', children: [
+        {type:'expanded', child:{type:'textfield', key:'rname', label:'姓名', value:rollDraft, onChanged:'setRollDraft'}},
+        {type:'sizedbox', width:6},
+        {type:'button', icon:'add', label:'加', onTap:'addName'},
+      ]},
+      gap(6),
+      {type:'row', children: [
+        {type:'expanded', child:{type:'textfield', key:'rbulk', label:'批量输入（逗号或换行分隔）', onChanged:'setBulk'}},
+        {type:'sizedbox', width:6},
+        {type:'button', icon:'list', label:'批量加', onTap:'addBulk'},
       ]},
     ]),
-    {type: 'sizedbox', height: 10},
-    card('📋 名单 (' + names.length + ')', [{type: 'row', children: [
-      {type: 'button', icon: 'delete', variant: 'outlined', label: '清空名单', onTap: 'clearNames'},
-      {type: 'sizedbox', width: 6},
-      {type: 'button', icon: 'save', variant: 'outlined', label: '导出', onTap: 'exportNames'},
-      {type: 'sizedbox', width: 6},
-      {type: 'button', icon: 'add', variant: 'outlined', label: '导入', onTap: 'importNames'},
-    ]}, {type: 'sizedbox', height: 6}].concat(list)),
-  ]};
+    gap(10),
+    card('名单（' + names.length + '）', [{type:'row', children: [
+      {type:'button', icon:'delete', variant:'outlined', label:'清空名单', onTap:'clearNames'},
+      {type:'sizedbox', width:6},
+      {type:'button', icon:'save', variant:'outlined', label:'导出', onTap:'exportNames'},
+      {type:'sizedbox', width:6},
+      {type:'button', icon:'add', variant:'outlined', label:'导入', onTap:'importNames'},
+    ]}, gap(6)].concat(list)),
+  ]);
 }
 
 function historyTab(){
   var history = getHistory();
   var rollHistory = getRollHistory();
-  var hRows = history.slice(0, 15).map(function(h){ return {type: 'row', children: [{type: 'text', text: h.time, size: 11, color: 'muted'}, {type: 'sizedbox', width: 8}, {type: 'text', text: '🎁 ' + h.names.join('、'), weight: 'bold'}]}; });
-  var rRows = rollHistory.slice(0, 15).map(function(h){ return {type: 'row', children: [{type: 'text', text: h.time, size: 11, color: 'muted'}, {type: 'sizedbox', width: 8}, {type: 'text', text: '🙋 ' + h.names.join('、'), weight: 'bold'}]}; });
-  return {type: 'column', crossAxisAlignment: 'stretch', children: [
-    card('🎁 抽奖历史 (' + history.length + ')', [{type: 'button', icon: 'delete', variant: 'outlined', label: '清空', onTap: 'clearHistory'}, {type: 'sizedbox', height: 6}].concat(hRows).concat([{type: 'divider'}, {type: 'text', text: '累计抽奖 ' + history.length + ' 次', size: 11, color: 'muted'}])),
-    {type: 'sizedbox', height: 10},
-    card('🙋 点名历史 (' + rollHistory.length + ')', [{type: 'button', icon: 'delete', variant: 'outlined', label: '清空', onTap: 'clearRollHistory'}, {type: 'sizedbox', height: 6}].concat(rRows)),
-  ]};
+  var hRows = history.slice(0,15).map(function(h){ return {type:'row', children:[muted(h.time), {type:'sizedbox', width:8}, body(h.names.join('、'), null)]}; });
+  var rRows = rollHistory.slice(0,15).map(function(h){ return {type:'row', children:[muted(h.time), {type:'sizedbox', width:8}, body(h.names.join('、'), null)]}; });
+  return col([
+    card('抽奖历史（' + history.length + '）', [{type:'button', icon:'delete', variant:'outlined', label:'清空', onTap:'clearHistory'}, gap(6)].concat(hRows).concat([{type:'divider'}, muted('累计抽奖 ' + history.length + ' 次')])),
+    gap(10),
+    card('点名历史（' + rollHistory.length + '）', [{type:'button', icon:'delete', variant:'outlined', label:'清空', onTap:'clearRollHistory'}, gap(6)].concat(rRows)),
+  ]);
 }
 
 function schemeTab(){
   var schemes = getSchemes();
   var list = schemes.length ? schemes.map(function(s, i){
-    return {type: 'card', padding: 8, child: {type: 'row', children: [
-      {type: 'text', text: s.name + '（' + s.prizes.length + '个奖品）', weight: 'bold'},
-      {type: 'spacer'},
-      {type: 'button', icon: 'list', variant: 'outlined', label: '加载', onTap: 'loadScheme:' + i},
-      {type: 'sizedbox', width: 4},
-      {type: 'button', icon: 'delete', variant: 'outlined', onTap: 'delScheme:' + i},
-    ]}};
-  }) : [{type: 'text', text: '还没有方案', color: 'muted', size: 12}];
-  return {type: 'column', crossAxisAlignment: 'stretch', children: [
-    card('💾 保存抽奖方案', [
-      {type: 'row', children: [
-        {type: 'expanded', child: {type: 'textfield', key: 'sn', label: '方案名', onChanged: 'setSchemeName'}},
-        {type: 'sizedbox', width: 6},
-        {type: 'button', icon: 'save', label: '保存', onTap: 'saveScheme'},
+    return card(null, [
+      {type:'row', children: [
+        body(s.name + '（' + s.prizes.length + '个奖品）', null),
+        {type:'spacer'},
+        {type:'button', icon:'list', variant:'outlined', label:'加载', onTap:'loadScheme:' + i},
+        {type:'sizedbox', width:4},
+        {type:'button', icon:'delete', variant:'outlined', onTap:'delScheme:' + i},
       ]},
-      {type: 'sizedbox', height: 4},
-      {type: 'text', text: '保存当前奖品与抽奖设置，方便随时切换', size: 10, color: 'muted'},
+    ]};
+  }) : [muted('还没有方案')];
+  return col([
+    card('保存抽奖方案', [
+      {type:'row', children: [
+        {type:'expanded', child:{type:'textfield', key:'sn', label:'方案名', onChanged:'setSchemeName'}},
+        {type:'sizedbox', width:6},
+        {type:'button', icon:'save', label:'保存', onTap:'saveScheme'},
+      ]},
+      gap(4),
+      muted('保存当前奖品与抽奖设置，方便随时切换'),
     ]),
-    {type: 'sizedbox', height: 10},
-    card('📦 奖品导入/导出', [
-      {type: 'row', children: [
-        {type: 'expanded', child: {type: 'button', icon: 'save', variant: 'outlined', label: '导出 JSON', onTap: 'exportJson'}},
-        {type: 'sizedbox', width: 6},
-        {type: 'expanded', child: {type: 'button', icon: 'add', variant: 'outlined', label: '导入 JSON', onTap: 'importJson'}},
+    gap(10),
+    card('奖品导入/导出', [
+      {type:'row', children: [
+        {type:'expanded', child:{type:'button', icon:'save', variant:'outlined', label:'导出 JSON', onTap:'exportJson'}},
+        {type:'sizedbox', width:6},
+        {type:'expanded', child:{type:'button', icon:'add', variant:'outlined', label:'导入 JSON', onTap:'importJson'}},
       ]},
     ]),
-    {type: 'sizedbox', height: 10},
-    card('📋 已存方案 (' + schemes.length + ')', list),
-  ]};
+    gap(10),
+    card('已存方案（' + schemes.length + '）', list),
+  ]);
 }
 
+function col(children){ return {type:'column', crossAxisAlignment:'stretch', children: children}; }
 function card(title, children){
   var c = [];
-  if (title) { c.push({type: 'text', text: title, weight: 'bold'}); c.push({type: 'sizedbox', height: 6}); }
-  return {type: 'card', child: {type: 'column', crossAxisAlignment: 'stretch', children: c.concat(children)}};
+  if (title) { c.push(h2(title)); c.push(gap(6)); }
+  return {type:'card', child:{type:'column', crossAxisAlignment:'stretch', children: c.concat(children)}};
 }
-function chip(text){ return {type: 'card', padding: 5, child: {type: 'text', text: text, size: 10, color: 'muted'}}; }
+function chip(text){ return {type:'card', padding:5, child: muted(text)}; }
+function badge(text, color){ return {type:'badge', text: text, color: color || 'primary'}; }
 
 function poolInfo(){
   var counts = getCounts(), drawn = getDrawn();
@@ -284,7 +295,7 @@ function onAction(name, args){
   msg = '';
   if (name.indexOf('goto:') === 0) { tab = name.substring(5); return; }
   if (name === 'setTab') { tab = args.value; return; }
-  if (name.indexOf('remove:') === 0) { removePrize(name.substring(7)); return; }
+  if (name.indexOf('remove:') === 0) { savePrizes(getPrizes().filter(function(p){ return p.id !== name.substring(7); })); return; }
   if (name.indexOf('toggleExclude:') === 0) { togglePrize(name.substring(14), 'exclude'); return; }
   if (name.indexOf('toggleMust:') === 0) { togglePrize(name.substring(11), 'must'); return; }
   if (name.indexOf('removeName:') === 0) { saveNames(getNames().filter(function(n){ return n.id !== name.substring(11); })); return; }
@@ -307,7 +318,6 @@ function onAction(name, args){
     case 'saveScheme': saveScheme(); break;
     case 'exportJson': starhope.storage.set('__clip__', JSON.stringify(getPrizes())); msg = '已导出 ' + getPrizes().length + ' 个奖品'; break;
     case 'importJson': importJson(); break;
-    // 点名
     case 'setRollDraft': rollDraft = args.value; break;
     case 'setBulk': bulkDraft = args.value; break;
     case 'addName': addName(); break;
@@ -329,7 +339,6 @@ function addPrize(){
   var p = getPrizes(); p.push({id: uid(), name: n, weight: parseInt(draft.weight)||1, maxCount: parseInt(draft.maxCount)||0, exclude: false, must: false});
   savePrizes(p); draft.name = ''; draft.weight = '1'; draft.maxCount = '0';
 }
-function removePrize(id){ savePrizes(getPrizes().filter(function(p){ return p.id !== id; })); }
 function togglePrize(id, field){ savePrizes(getPrizes().map(function(x){ if (x.id === id) { var o = {}; o[field] = !x[field]; return assign(x, o); } return x; })); }
 function saveScheme(){
   if (!schemeName) { msg = '请输入方案名'; return; }
@@ -369,7 +378,6 @@ function draw(){
   starhope.storage.set('counts', counts); starhope.storage.set('drawn', drawn);
 }
 
-// ===== 点名逻辑 =====
 function addName(){
   var n = (rollDraft || '').trim();
   if (!n) { msg = '姓名不能为空'; return; }
@@ -391,7 +399,7 @@ function importNames(){
 }
 function rollCall(){
   var pool = rollPool();
-  if (!pool.length) { msg = '可点名单为空（添加人员 / 销假 / 重置记录）'; rollResults = []; return; }
+  if (!pool.length) { msg = '可点名单为空'; rollResults = []; return; }
   var batch = Math.min(getRollBatch(), pool.length);
   var avail = pool.slice(), winners = [];
   for (var i = 0; i < batch && avail.length; i++) {

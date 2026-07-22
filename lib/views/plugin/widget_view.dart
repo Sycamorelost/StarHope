@@ -177,6 +177,31 @@ class _PluginWidgetViewState extends State<PluginWidgetView> {
         );
       case 'divider':
         return const Divider(height: 1);
+      case 'progress':
+        final v = ((n['value'] as num?) ?? 0).toDouble().clamp(0.0, 1.0);
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: v,
+            minHeight: (n['height'] as num?)?.toDouble() ?? 8,
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            color: _color(n['color']) ?? Theme.of(context).colorScheme.primary,
+          ),
+        );
+      case 'badge':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: _color(n['color']) ?? Theme.of(context).colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text('${n['text'] ?? ''}',
+              style: TextStyle(
+                  fontSize: 11,
+                  color: n['color'] != null
+                      ? Colors.white
+                      : Theme.of(context).colorScheme.onSecondaryContainer)),
+        );
       case 'spacer':
         return const Spacer();
       default:
