@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/models/user.dart';
 import '../../providers/auth_provider.dart';
-import '../common/galaxy_view.dart';
+import '../common/earth_view.dart';
 import '../common/glass.dart';
 import '../common/starry_button.dart';
 import '../common/starry_sky.dart';
@@ -111,7 +111,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  // 内容层：宽屏 左银河 + 右登录（等高并排）；窄屏 仅登录卡居中
+                  // 内容层：宽屏 左地球 + 右登录（等高并排）；窄屏 仅登录卡居中
                   if (isWide)
                     Padding(
                       padding: const EdgeInsets.all(40),
@@ -120,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
                         children: [
                           Expanded(
                             flex: 5,
-                            child: RepaintBoundary(child: _galaxyPanel()),
+                            child: RepaintBoundary(child: _earthPanel()),
                           ),
                           const SizedBox(width: 24),
                           Expanded(
@@ -152,12 +152,12 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  /// 左侧银河动画毛玻璃面板（宽屏时与登录卡等高并排）
-  Widget _galaxyPanel() {
+  /// 左侧动态地球毛玻璃面板（宽屏时与登录卡等高并排）
+  Widget _earthPanel() {
     return GlassCard(
       surfaceColor: const Color(0xFF0b1026).withValues(alpha: 0.55),
       padding: EdgeInsets.zero,
-      child: const GalaxyView(),
+      child: const EarthView(),
     );
   }
 
