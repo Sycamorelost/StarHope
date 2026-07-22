@@ -11,6 +11,7 @@ class StarryButton extends StatefulWidget {
   final IconData? icon;
   final Color? color;
   final bool expanded;
+  final bool isLoading;
 
   const StarryButton({
     super.key,
@@ -19,6 +20,7 @@ class StarryButton extends StatefulWidget {
     this.icon,
     this.color,
     this.expanded = true,
+    this.isLoading = false,
   });
 
   @override
@@ -78,7 +80,7 @@ class _StarryButtonState extends State<StarryButton>
 
   Widget _buildButton(BuildContext context, Color base) {
     final cs = Theme.of(context).colorScheme;
-    final disabled = widget.onPressed == null;
+    final disabled = widget.onPressed == null && !widget.isLoading;
     return AnimatedBuilder(
       animation: _ctl,
       builder: (_, child) {
@@ -124,7 +126,17 @@ class _StarryButtonState extends State<StarryButton>
                 mainAxisSize: widget.expanded ? MainAxisSize.max : MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (widget.icon != null) ...[
+                  if (widget.isLoading) ...[
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ] else if (widget.icon != null) ...[
                     Icon(widget.icon,
                         color: Colors.white, size: 18),
                     const SizedBox(width: 8),
