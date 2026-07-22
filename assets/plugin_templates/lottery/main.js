@@ -65,19 +65,20 @@ function render(){
       msg ? {type: 'text', text: msg, color: 'error', size: 12} : {type: 'sizedbox', height: 0},
     ]),
     {type: 'sizedbox', height: 10},
-    card('历史 (' + history.length + ')', [
-      {type: 'button', icon: 'delete', variant: 'outlined', label: '清空历史', onTap: 'clearHistory'},
-      {type: 'sizedbox', height: 6},
-    ].concat(history.slice(0, 10).map(function(h){
-      return {type: 'row', children: [
-        {type: 'text', text: h.time, size: 11, color: 'muted'},
-        {type: 'sizedbox', width: 8},
-        {type: 'text', text: h.name, weight: 'bold'},
-        {type: 'spacer'},
-        h.count ? {type: 'text', text: '第 '+h.count+' 次', size: 11, color: 'muted'} : {type: 'sizedbox'},
-      ]};
-    }))).concat([{type: 'divider'}, {type: 'text', text: '统计：共抽 ' + history.length + ' 次 · ' + prizes.length + ' 个奖品', size: 11, color: 'muted'}]),
-    ]),
+    card('历史 (' + history.length + ')',
+      [{type: 'button', icon: 'delete', variant: 'outlined', label: '清空历史', onTap: 'clearHistory'},
+       {type: 'sizedbox', height: 6}]
+        .concat(history.slice(0, 10).map(function(h){
+          return {type: 'row', children: [
+            {type: 'text', text: h.time, size: 11, color: 'muted'},
+            {type: 'sizedbox', width: 8},
+            {type: 'text', text: h.name, weight: 'bold'},
+            {type: 'spacer'},
+            h.count ? {type: 'text', text: '第 '+h.count+' 次', size: 11, color: 'muted'} : {type: 'sizedbox'},
+          ]};
+        }))
+        .concat([{type: 'divider'}, {type: 'text', text: '统计：共抽 ' + history.length + ' 次 · ' + prizes.length + ' 个奖品', size: 11, color: 'muted'}])
+    ),
   ];
   return {type: 'column', crossAxisAlignment: 'stretch', children: kids};
 }

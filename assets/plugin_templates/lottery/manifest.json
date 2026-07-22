@@ -11,5 +11,5 @@
   "author": { "signed": false },
   "extensions": [ { "type": "tool_page", "id": "main", "title": "抽奖", "icon": "casino" } ],
   "params_schema": {},
-  "files": [ { "name": "main.js", "sha256": "acfd6274ca5dd5cb9dce64186c915700f141783528338da354ffd800e0324334", "size": 7306 } ]
+  "files": [ { "name": "main.js", "sha256": "b920ebc4eedbe5ea66161e905aec89c1e517204b04802b0863bb8ad208b5821a", "size": 7347 } ]
 }

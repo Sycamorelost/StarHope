@@ -34,7 +34,11 @@ class PluginRuntime {
     }
     final inst = PluginRuntime._(id, rt, storageFile, storage);
     inst._setupHost();
-    rt.evaluate(mainJs); // 执行插件脚本（注册 render/onAction 等）
+    final res = rt.evaluate(mainJs); // 执行插件脚本（注册 render/onAction 等）
+    if (res.isError) {
+      rt.dispose();
+      throw Exception('脚本执行错误: ${res.stringResult}');
+    }
     return inst;
   }
 
@@ -73,12 +77,28 @@ class PluginRuntime {
     starhope.randomInt = function(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; };
   ''';
 
-  /// 调用插件 render()，返回 widget 树 JSON 字符串（无 render 返回 null）。
+  /// 调用插件 render()，返回 widget 树 JSON 字符串（无 render 返回诊断 JSON）。
   String? renderJson() {
     final r = _rt.evaluate(
         "typeof render === 'function' ? JSON.stringify(render()) : ''");
+    if (r.isError) {
+      return jsonEncode({
+        'type': 'text',
+        'text': 'render() 出错：${r.stringResult}',
+        'color': 'error',
+        'size': 13,
+      });
+    }
     final s = r.stringResult;
-    return (s.isEmpty || s == 'null') ? null : s;
+    if (s.isEmpty) {
+      return jsonEncode({
+        'type': 'text',
+        'text': '插件未定义 render 函数（main.js 可能执行失败）',
+        'color': 'error',
+        'size': 13,
+      });
+    }
+    return s == 'null' ? null : s;
   }
 
   /// 调用插件 onAction(name, args)。
