@@ -282,6 +282,24 @@ class _PluginWidgetViewState extends State<PluginWidgetView> {
             ],
           ),
         );
+      case 'error':
+        final cs = Theme.of(context).colorScheme;
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: cs.errorContainer.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, size: 18, color: cs.error),
+              const SizedBox(width: 8),
+              Expanded(
+                  child: Text(n['text'] ?? '',
+                      style: TextStyle(fontSize: 13, color: cs.onErrorContainer))),
+            ],
+          ),
+        );
       default:
         return const SizedBox();
     }
