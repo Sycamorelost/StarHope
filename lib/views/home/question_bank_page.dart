@@ -31,6 +31,7 @@ class _QuestionBankPageState extends State<QuestionBankPage> {
   Widget build(BuildContext context) {
     final qb = context.watch<QuestionBankProvider>();
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: Column(

@@ -30,6 +30,7 @@ class _ExamPageState extends State<ExamPage> {
     final pe = context.watch<PracticeExamProvider>();
     if (pe.inExam) return _examRunning(context, pe);
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
@@ -813,6 +814,7 @@ class _ExamPageState extends State<ExamPage> {
     final sec = remaining % 60;
     final lowTime = remaining < 60;
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(

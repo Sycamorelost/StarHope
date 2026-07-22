@@ -32,9 +32,11 @@ class _SummaryPageState extends State<SummaryPage> {
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      body: ListView(
+      body: Padding(
         padding: const EdgeInsets.all(16),
-        children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           Row(
             children: [
               Text('摘要',
@@ -120,29 +122,30 @@ class _SummaryPageState extends State<SummaryPage> {
             ),
           ),
           const SizedBox(height: 16),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 4.5,
-            children: [
-              _statCard('题库题目', qb.questions.length,
-                  Icons.library_books_outlined, cs.primary, cs),
-              _statCard('题库文件夹', qb.folders.length, Icons.folder_outlined,
-                  cs.tertiary, cs),
-              _statCard('错题本', pe.wrongCount, Icons.error_outline,
-                  Colors.red.shade400, cs),
-              _statCard('AI 智能体', ai.agents.length, Icons.smart_toy_outlined,
-                  cs.secondary, cs),
-              _statCard('考试规则', pe.rules.length, Icons.school_outlined,
-                  cs.primary, cs),
-              _statCard('考试记录', pe.results.length,
-                  Icons.assignment_turned_in_outlined, cs.tertiary, cs),
-            ],
+          Expanded(
+            child: GridView.count(
+              crossAxisCount: 2,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 4.5,
+              children: [
+                _statCard('题库题目', qb.questions.length,
+                    Icons.library_books_outlined, cs.primary, cs),
+                _statCard('题库文件夹', qb.folders.length,
+                    Icons.folder_outlined, cs.tertiary, cs),
+                _statCard('错题本', pe.wrongCount, Icons.error_outline,
+                    Colors.red.shade400, cs),
+                _statCard('AI 智能体', ai.agents.length,
+                    Icons.smart_toy_outlined, cs.secondary, cs),
+                _statCard('考试规则', pe.rules.length, Icons.school_outlined,
+                    cs.primary, cs),
+                _statCard('考试记录', pe.results.length,
+                    Icons.assignment_turned_in_outlined, cs.tertiary, cs),
+              ],
+            ),
           ),
         ],
+        ),
       ),
     );
   }

@@ -19,6 +19,7 @@ class _ReaderPageState extends State<ReaderPage> {
   Widget build(BuildContext context) {
     final rd = context.watch<ReaderProvider>();
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

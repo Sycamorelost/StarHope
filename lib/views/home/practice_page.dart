@@ -35,6 +35,7 @@ class _PracticePageState extends State<PracticePage> {
   Widget build(BuildContext context) {
     final pe = context.watch<PracticeExamProvider>();
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: pe.practice == null ? _setupView(context) : _runningView(context),

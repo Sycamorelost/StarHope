@@ -25,15 +25,20 @@ class StarBottomNav extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final auth = context.watch<AuthProvider>();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      child: GlassCard(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            for (final it in _items)
-              _item(context, it, nav.tab == it.tab, cs, auth),
-          ],
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Center(
+        child: FractionallySizedBox(
+          widthFactor: 0.5,
+          child: GlassCard(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                for (final it in _items)
+                  _item(context, it, nav.tab == it.tab, cs, auth),
+              ],
+            ),
+          ),
         ),
       ),
     );

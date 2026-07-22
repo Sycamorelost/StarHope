@@ -135,6 +135,7 @@ class _WrongBookPageState extends State<WrongBookPage> {
         _groupFilter != null ||
         _sessionFilter != null;
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
