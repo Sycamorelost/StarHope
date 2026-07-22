@@ -27,7 +27,7 @@ class StarBottomNav extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: GlassCard(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -50,13 +50,13 @@ class StarBottomNav extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-                color: selected ? cs.primary : Colors.transparent, width: 3),
+                color: selected ? cs.primary : Colors.transparent, width: 2),
           ),
-          padding: const EdgeInsets.all(3),
+          padding: const EdgeInsets.all(2),
           child: UserAvatar(
             avatarPath: auth.user?.avatarPath,
             nickname: auth.user?.nickname ?? '?',
-            radius: 24,
+            radius: 20,
           ),
         ),
       );
@@ -68,18 +68,18 @@ class StarBottomNav extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 46,
-            height: 46,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: selected ? cs.primary : Colors.transparent,
             ),
-            child: Icon(it.icon, size: 24, color: iconColor),
+            child: Icon(it.icon, size: 20, color: iconColor),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 2),
           Text(it.label,
               style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 10,
                   color: selected ? cs.primary : cs.onSurfaceVariant)),
         ],
       ),
