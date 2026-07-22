@@ -1,3 +1,4 @@
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import '../core/constants.dart';
@@ -71,11 +72,18 @@ class AuthService {
     if (user.account != account.trim()) {
       throw ArgumentError('账号不匹配');
     }
-    if (!CryptoService.verifyPassword(password, user.salt, user.passwordHash)) {
+    // PBKDF2（120000 次迭代）在后台 isolate 计算，避免阻塞 UI 主线程导致
+    // 登录 loading 动画卡顿；一次派生同时用于密码校验与主密钥（原先
+    // verifyPassword + _deriveKey 各算一次，主线程两次阻塞）。
+    final salt = user.salt;
+    final derived = await Isolate.run(
+      () => CryptoService.pbkdf2(password, salt),
+    );
+    if (!CryptoService.verifyDerivedHex(derived, user.passwordHash)) {
       throw ArgumentError('密码错误');
     }
     _currentUser = user;
-    _masterKey = _deriveKey(password, user.salt);
+    _masterKey = derived;
     return user;
   }
 
