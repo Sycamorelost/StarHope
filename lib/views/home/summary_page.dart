@@ -37,17 +37,7 @@ class _SummaryPageState extends State<SummaryPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: IconButton(
-              tooltip: '刷新·全局同步数据',
-              onPressed: _refreshing ? null : _refreshAll,
-              icon: Icon(_refreshing ? Icons.sync : Icons.refresh,
-                  color: cs.primary),
-            ),
-          ),
-          const SizedBox(height: 8),
-          // 用户卡片（头像可点换 + 编辑资料按钮）
+          // 用户卡片（头像可点换 + 刷新/编辑资料按钮）
           GlassCard(
             padding: const EdgeInsets.all(20),
             child: Row(
@@ -105,6 +95,12 @@ class _SummaryPageState extends State<SummaryPage> {
                       ),
                     ],
                   ),
+                ),
+                IconButton(
+                  tooltip: '刷新·全局同步数据',
+                  onPressed: _refreshing ? null : _refreshAll,
+                  icon: Icon(_refreshing ? Icons.sync : Icons.refresh,
+                      color: cs.primary),
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit),
