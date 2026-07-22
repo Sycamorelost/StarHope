@@ -3,6 +3,7 @@
 > 本文件供新会话读取后立即接续开发。
 > **最后更新（2026-07-22）**：项目从 Deep-tutor monorepo（`d:\MyProject\Deep-tutor\REF\SH`）迁移至 `d:\Personnel\StarHope` 独立 git 仓库并推送 GitHub（https://github.com/Sycamorelost/StarHope，分支 main）；memory 文件同步迁移至 `d--Personnel-StarHope`。代码状态不变（db v7、依赖与架构未变）。
 > **更新（2026-07-23）**：登录页左侧毛玻璃面板插图由"银河流行动画（`GalaxyView`）"改为"静态精致地球（`EarthView`，`lib/views/common/earth_view.dart`）"——纯 CustomPaint 球面正交投影（陆地按真实经纬度分布 + Δlon 细分 + clipPath 兜底），**地球不自转**，叠加气候带陆地渐变（极地白/温带绿/热带棕）+ 半透明云层 + 边缘大气散射 rim light + 海洋镜面反光 + 晨昏阴影，旁边流星；删除已无引用的 `galaxy_view.dart`。flutter analyze 0 issues、build windows + 运行（timeout 退出码 124）通过。
+> **更新（2026-07-23 · 页面切换）**：全项目页面切换改用渐变过渡——新增 `lib/views/common/page_transitions.dart`（`FadeThroughSwitcher` 同级渐变 + `SlidePageTransitionsBuilder` push 滑入）；登录态（`AuthGate`）、加载→主页（`_PostLoginLoader`）、tab 切换（`HomeShell`）、启动 loading↔AuthGate 均套 fade-through，启动 loading 背景由浅色改深蓝统一色调，push 详情页经全局 `pageTransitionsTheme` 自动从右滑入。**后续规范**：同级切换用 `FadeThroughSwitcher`，push 用 slide（已全局生效，新增 `MaterialPageRoute` 自动继承）。flutter analyze 0 issues、build windows + 运行（timeout 124）通过。
 > 项目根目录：`d:\Personnel\StarHope`（独立 git 仓库，远程 https://github.com/Sycamorelost/StarHope，分支 main；Windows 10 Home China / Flutter 3.44.7 / Dart 3.12.2）。
 > StarHope（Flutter 桌面）与 Deep-tutor（Web，backend/frontend/extension）是两个独立技术栈项目；StarHope 此前曾作为参考纳入 Deep-tutor monorepo 的 `REF/SH` 子目录，现已独立为单独仓库（GitHub: Sycamorelost/StarHope）。未来仍计划通过 API 与 Deep-tutor 后端集成。
 
@@ -141,15 +142,16 @@ lib/
       window_title_bar.dart     # 自定义标题栏（全屏按钮）
       starry_sky.dart           # ★ 流星星空动画（星点坐标按尺寸预生成缓存）
       earth_view.dart           # ★ 静态精致地球（气候带陆地渐变+云层+大气rim light+海洋反光+流星，登录页左面板）
+      page_transitions.dart     # ★ FadeThroughSwitcher（同级渐变切换）+ SlidePageTransitionsBuilder（push 从右滑入，全局 pageTransitionsTheme）
       starry_button.dart        # ★ 灵动按钮（悬停星空高亮）
       disclaimer.dart           # 免责声明全文 + 弹窗
       user_avatar.dart          # 头像组件（显示头像或首字母）
     auth/
-      auth_gate.dart            # hasUser?LoginPage:RegisterPage / 已登录 HomeShell
+      auth_gate.dart            # ★ FadeThroughSwitcher 按 (登录态,hasUser) 在 注册/登录/主页加载 间渐变；_PostLoginLoader 加载→主页渐变
       login_page.dart           # ★ 整页星空背景 + 左地球面板 + 右登录卡（头像/昵称/@账号/密码）
       register_page.dart
     home/
-      home_shell.dart           # NavigationRail/底部导航
+      home_shell.dart           # NavigationRail/底部导航；tab 内容 FadeThroughSwitcher 渐变
       reader_viewer_page.dart   # ★ 分叉：PDF 走 PdfViewer（pdfrx）+绘图 user-space 坐标；文本走 _extractText/_paginate/PageView
       question_bank_page.dart / practice_page.dart / exam_page.dart / ai_page.dart / reader_page.dart / wrong_book_page.dart / settings_page.dart / ...
 windows/runner/win32_window.cpp # ★ 无边框+圆角+NCCALCSIZE+NCHITTEST
