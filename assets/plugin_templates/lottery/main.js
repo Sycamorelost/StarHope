@@ -62,7 +62,7 @@ function prizesTab(){
     if (p.must) chips.push(badge('必中', 'primary'));
     if (p.maxCount > 0) chips.push(chip('限中 ' + p.maxCount));
     return card(null, [ {type:'row', children:[ body(p.name, null), {type:'spacer'}, muted('已中 ' + (counts[p.id]||0)), {type:'sizedbox', width:6}, {type:'button', icon:'delete', variant:'outlined', onTap:'remove:' + p.id} ]}, gap(4), {type:'wrap', children: chips.concat([ {type:'sizedbox', width:4}, {type:'button', icon: p.exclude ? 'add':'remove', variant:'outlined', label: p.exclude ? '纳入':'排除', onTap:'toggleExclude:' + p.id}, {type:'sizedbox', width:4}, {type:'button', icon:'star', variant: p.must ? 'tonal':'outlined', label: p.must ? '取消必中':'设必中', onTap:'toggleMust:' + p.id} ]) }]);
-  }) : [muted('还没有奖品，先添加几个')];
+  }) : [emptyNode('暂无奖品', '在上方添加，或从方案 tab 导入', 'list', '去添加', 'goto:prizes')];
   return col([ card('添加奖品', [ {type:'row', children:[ {type:'expanded', child:{type:'textfield', key:'pname', label:'奖品名', value:draft.name, onChanged:'setName'}}, {type:'sizedbox', width:6}, {type:'sizedbox', width:60, child:{type:'textfield', key:'pw', label:'权重', value:draft.weight, keyboard:'number', onChanged:'setWeight'}}, {type:'sizedbox', width:6}, {type:'sizedbox', width:72, child:{type:'textfield', key:'pm', label:'限中次数', value:draft.maxCount, keyboard:'number', onChanged:'setMax'}}, {type:'sizedbox', width:6}, {type:'button', icon:'add', label:'加', onTap:'add'} ]}, gap(6), h2('档位'), {type:'segmented', value:'' + (draft.tier||'1'), options:[{value:'1', label:'一等'},{value:'2', label:'二等'},{value:'3', label:'三等'}], onChanged:'setTier'}, gap(4), muted('限中次数：0 = 无限，>0 = 抽满即移出奖池；档位用于多档抽奖') ]), gap(12), card('奖品列表（' + prizes.length + '）', [{type:'button', icon:'delete', variant:'outlined', label:'清空全部', onTap:'clearPrizes'}, gap(6)].concat(list)) ]);
 }
 
@@ -90,7 +90,7 @@ function rollListTab(){
   var list = names.length ? names.map(function(n){
     var gone = n.leave || (getRollUnique() && rollDrawn.indexOf(n.id) >= 0);
     return card(null, [ {type:'row', children:[ body(n.name, gone ? 'muted' : null), {type:'spacer'}, (parseInt(n.weight)||1) !== 1 ? badge('权重 ' + (n.weight||1), 'primary') : gap(0), n.leave ? badge('请假', 'error') : gap(0), {type:'sizedbox', width:4}, {type:'button', icon:'star', variant:'outlined', label:'' + (n.weight||1), onTap:'cycWeight:' + n.id}, {type:'sizedbox', width:4}, {type:'button', icon: n.leave ? 'add':'remove', variant:'outlined', label: n.leave ? '销假':'请假', onTap:'toggleLeave:' + n.id}, {type:'sizedbox', width:4}, {type:'button', icon:'delete', variant:'outlined', onTap:'removeName:' + n.id} ]} ]);
-  }) : [muted('名单为空，添加人员')];
+  }) : [emptyNode('名单为空', '添加人员或批量导入', 'list', '去添加', 'goto:rollList')];
   return col([ card('添加人员', [ {type:'row', children:[ {type:'expanded', child:{type:'textfield', key:'rname', label:'姓名', value:rollDraft, onChanged:'setRollDraft'}}, {type:'sizedbox', width:6}, {type:'button', icon:'add', label:'加', onTap:'addName'} ]}, gap(6), {type:'row', children:[ {type:'expanded', child:{type:'textfield', key:'rbulk', label:'批量输入（逗号或换行分隔）', onChanged:'setBulk'}}, {type:'sizedbox', width:6}, {type:'button', icon:'list', label:'批量加', onTap:'addBulk'} ]} ]), gap(12), card('名单（' + names.length + '）', [{type:'row', children:[ {type:'button', icon:'delete', variant:'outlined', label:'清空名单', onTap:'clearNames'}, {type:'sizedbox', width:6}, {type:'button', icon:'save', variant:'outlined', label:'导出', onTap:'exportNames'}, {type:'sizedbox', width:6}, {type:'button', icon:'add', variant:'outlined', label:'导入', onTap:'importNames'} ]}, gap(6), muted('点星标循环切换权重（1→2→3→1）')].concat(list)) ]);
 }
 function historyTab(){
@@ -112,6 +112,7 @@ function col(children){ return {type:'column', crossAxisAlignment:'stretch', chi
 function card(title, children){ var c = []; if (title) { c.push(h2(title)); c.push(gap(6)); } return {type:'card', padding:14, child:{type:'column', crossAxisAlignment:'stretch', children: c.concat(children)}}; }
 function chip(text){ return {type:'card', padding:5, child: muted(text)}; }
 function badge(text, color){ return {type:'badge', text: text, color: color || 'primary'}; }
+function emptyNode(title, subtitle, icon, actionLabel, action){ return {type:'empty', title: title, subtitle: subtitle, icon: icon, actionLabel: actionLabel, action: action}; }
 
 function poolInfo(){ var counts = getCounts(), drawn = getDrawn(); return getPrizes().filter(function(p){ if (p.exclude) return false; if (p.maxCount > 0 && (counts[p.id]||0) >= p.maxCount) return false; if (getUnique() && drawn.indexOf(p.id) >= 0) return false; return true; }); }
 function rollPool(){ var rd = getRollDrawn(); return getNames().filter(function(n){ return !n.leave && !(getRollUnique() && rd.indexOf(n.id) >= 0); }); }

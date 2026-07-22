@@ -216,6 +216,72 @@ class _PluginWidgetViewState extends State<PluginWidgetView> {
         );
       case 'spacer':
         return const Spacer();
+      case 'slider':
+        final slVal = ((n['value'] as num?) ?? 0).toDouble();
+        final slMin = ((n['min'] as num?) ?? 0).toDouble();
+        final slMax = ((n['max'] as num?) ?? 10).toDouble();
+        final slDiv = n['divisions'] as int?;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Slider(
+                  value: slVal.clamp(slMin, slMax),
+                  min: slMin,
+                  max: slMax,
+                  divisions: slDiv,
+                  label: n['label'] as String? ?? slVal.toStringAsFixed(0),
+                  onChanged: (v) => _action(n['onChanged'] as String?,
+                      args: {'value': v}, reRender: false),
+                  onChangeEnd: (v) =>
+                      _action(n['onChanged'] as String?, args: {'value': v}),
+                ),
+              ),
+              SizedBox(
+                width: 32,
+                child: Text(slVal.toStringAsFixed(0),
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.primary)),
+              ),
+            ],
+          ),
+        );
+      case 'empty':
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(_icon(n['icon']),
+                  size: 48,
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35)),
+              const SizedBox(height: 12),
+              Text(n['title'] ?? '',
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
+              if (n['subtitle'] != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(n['subtitle'] as String,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      textAlign: TextAlign.center),
+                ),
+              if (n['actionLabel'] != null) ...[
+                const SizedBox(height: 16),
+                FilledButton.tonalIcon(
+                  onPressed: () => _action(n['action'] as String?),
+                  icon: Icon(_icon(n['actionIcon']), size: 18),
+                  label: Text(n['actionLabel'] as String),
+                ),
+              ],
+            ],
+          ),
+        );
       default:
         return const SizedBox();
     }
