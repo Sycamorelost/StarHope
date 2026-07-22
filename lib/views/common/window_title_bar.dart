@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../core/constants.dart';
 import '../../services/window_service.dart';
 
 /// 自定义无边框窗口标题栏：可拖动 + 最小化/最大化/关闭按钮。
@@ -43,7 +44,11 @@ class WindowTitleBar extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: fg.withValues(alpha: 0.85))),
+            const SizedBox(width: 8),
+            Text(AppConstants.poweredBy,
+                style: TextStyle(fontSize: 9, color: fg.withValues(alpha: 0.4))),
             const Spacer(),
+            const _TopmostButton(),
             _ctrlButton(context, Icons.fullscreen, '全屏 (F11)',
                 () => WindowService.toggleFullscreen()),
             const SizedBox(width: 2),
@@ -155,4 +160,36 @@ Future<CloseAction?> _showCloseDialog(BuildContext context) {
       ),
     ),
   );
+}
+
+/// 窗口置顶按钮（钉子，放全屏按钮左侧）。
+class _TopmostButton extends StatefulWidget {
+  const _TopmostButton();
+  @override
+  State<_TopmostButton> createState() => _TopmostButtonState();
+}
+
+class _TopmostButtonState extends State<_TopmostButton> {
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final topmost = WindowService.isTopmost;
+    return Tooltip(
+      message: topmost ? '取消置顶' : '置顶',
+      child: InkWell(
+        onTap: () {
+          WindowService.toggleTopmost();
+          setState(() {});
+        },
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          width: 34,
+          height: 28,
+          alignment: Alignment.center,
+          child: Icon(Icons.push_pin,
+              size: 15, color: topmost ? cs.primary : cs.onSurfaceVariant),
+        ),
+      ),
+    );
+  }
 }

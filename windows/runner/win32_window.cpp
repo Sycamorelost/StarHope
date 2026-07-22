@@ -218,7 +218,7 @@ Win32Window::MessageHandler(HWND hwnd,
       GetClientRect(hwnd, &rc);
       POINT pt{GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam)};
       ScreenToClient(hwnd, &pt);
-      const int b = 6;
+      const int b = 8;
       const bool left = pt.x < b;
       const bool right = pt.x > (rc.right - b);
       const bool top = pt.y < b;

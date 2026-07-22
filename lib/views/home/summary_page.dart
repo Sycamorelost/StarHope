@@ -37,23 +37,16 @@ class _SummaryPageState extends State<SummaryPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-          Row(
-            children: [
-              Text('摘要',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold)),
-              const Spacer(),
-              IconButton(
-                tooltip: '刷新·全局同步数据',
-                onPressed: _refreshing ? null : _refreshAll,
-                icon: Icon(_refreshing ? Icons.sync : Icons.refresh,
-                    color: cs.primary),
-              ),
-            ],
+          Align(
+            alignment: Alignment.centerRight,
+            child: IconButton(
+              tooltip: '刷新·全局同步数据',
+              onPressed: _refreshing ? null : _refreshAll,
+              icon: Icon(_refreshing ? Icons.sync : Icons.refresh,
+                  color: cs.primary),
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           // 用户卡片（头像可点换 + 编辑资料按钮）
           GlassCard(
             padding: const EdgeInsets.all(20),

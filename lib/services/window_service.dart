@@ -87,6 +87,25 @@ class WindowService {
     _examLock = false;
   }
 
+  // ==================== 置顶 ====================
+  static bool _topmost = false;
+  static bool get isTopmost => _topmost;
+
+  /// 切换窗口置顶（保持在最顶层）。
+  static void toggleTopmost() {
+    final h = _findHwnd();
+    if (h == 0) return;
+    _topmost = !_topmost;
+    SetWindowPos(
+        h,
+        _topmost ? HWND_TOPMOST : HWND_NOTOPMOST,
+        0,
+        0,
+        0,
+        0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+  }
+
   // ==================== 全屏 ====================
   static bool _fullscreen = false;
   static int _savedLeft = 0, _savedTop = 0, _savedW = 0, _savedH = 0;

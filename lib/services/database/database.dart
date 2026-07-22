@@ -914,26 +914,28 @@ class AppDatabase {
   }
 
   // ============ 备份/恢复 ============
-  Future<void> clearAll() async {
+  Future<void> clearAll([Set<String>? tables]) async {
     final d = await db;
+    const all = {
+      'questions',
+      'question_folders',
+      'practice_sessions',
+      'exam_rules',
+      'exam_results',
+      'wrong_questions',
+      'wrong_groups',
+      'ai_services',
+      'ai_agents',
+      'ai_conversations',
+      'ai_messages',
+      'reading_materials',
+      'notes',
+      'plugins',
+    };
+    final t = tables ?? all;
     await d.transaction((txn) async {
-      for (final t in [
-        'questions',
-        'question_folders',
-        'practice_sessions',
-        'exam_rules',
-        'exam_results',
-        'wrong_questions',
-        'wrong_groups',
-        'ai_services',
-        'ai_agents',
-        'ai_conversations',
-        'ai_messages',
-        'reading_materials',
-        'notes',
-        'plugins',
-      ]) {
-        await txn.delete(t);
+      for (final name in t) {
+        await txn.delete(name);
       }
     });
   }

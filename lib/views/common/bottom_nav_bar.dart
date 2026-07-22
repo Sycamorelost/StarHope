@@ -30,7 +30,7 @@ class StarBottomNav extends StatelessWidget {
         child: FractionallySizedBox(
           widthFactor: 0.5,
           child: GlassCard(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -61,7 +61,7 @@ class StarBottomNav extends StatelessWidget {
           child: UserAvatar(
             avatarPath: auth.user?.avatarPath,
             nickname: auth.user?.nickname ?? '?',
-            radius: 20,
+            radius: 26,
           ),
         ),
       );
@@ -73,18 +73,18 @@ class StarBottomNav extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: selected ? cs.primary : Colors.transparent,
             ),
-            child: Icon(it.icon, size: 20, color: iconColor),
+            child: Icon(it.icon, size: 18, color: iconColor),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 1),
           Text(it.label,
               style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 9,
                   color: selected ? cs.primary : cs.onSurfaceVariant)),
         ],
       ),

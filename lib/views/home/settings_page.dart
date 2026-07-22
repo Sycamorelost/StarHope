@@ -167,8 +167,8 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           _menuTile(
             icon: Icons.delete_forever_outlined,
-            title: '一键清空全部数据',
-            subtitle: '清空题库/错题/历史/资料/AI 配置等所有本地数据并删除账户',
+            title: '删除数据（可选模块）',
+            subtitle: '勾选要删除的数据类型（题库/错题/历史/资料/AI 等），可选是否删账户',
             onTap: () => _factoryReset(context, auth),
           ),
           const SizedBox(height: 16),
@@ -268,31 +268,76 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _factoryReset(BuildContext context, AuthProvider auth) async {
+    // 1. 选择要删除的模块（复用备份模块清单）
+    final modules = await _pickBackupModules(context);
+    if (modules == null || modules.isEmpty) return;
+    if (!context.mounted) return;
+
+    const map = <String, List<String>>{
+      'questions': ['questions'],
+      'folders': ['question_folders'],
+      'practices': ['practice_sessions'],
+      'exam_rules': ['exam_rules'],
+      'exam_results': ['exam_results'],
+      'wrong': ['wrong_questions'],
+      'wrong_groups': ['wrong_groups'],
+      'materials': ['reading_materials', 'notes'],
+      'ai_services': ['ai_services'],
+      'ai_agents': ['ai_agents'],
+      'ai_conversations': ['ai_conversations'],
+      'ai_messages': ['ai_messages'],
+    };
+    final tables = <String>{for (final m in modules) ...?map[m]};
+
+    // 2. 确认 + 是否删账户
+    var delAccount = false;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('一键清空全部数据'),
-        content: const Text(
-            '将清空题库/错题/历史/资料/AI 配置等所有本地数据，并删除账户、注销回注册页。此操作不可撤销。'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消')),
-          FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('清空')),
-        ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, set) => AlertDialog(
+          title: const Text('删除选中数据'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('将删除选中的 ${modules.length} 类数据，此操作不可撤销。'),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                value: delAccount,
+                onChanged: (v) => set(() => delAccount = v ?? false),
+                title: const Text('同时删除账户并注销回注册页'),
+                dense: true,
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('取消')),
+            FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('删除')),
+          ],
+        ),
       ),
     );
     if (ok != true) return;
+
+    // 3. 执行删除
     final db = AppDatabase.instance;
-    await db.clearAll();
-    await db.deleteUser();
-    await FileStorageService.clearAttachments();
-    await SecureStorageService().clearAll();
-    if (!context.mounted) return;
-    auth.logout();
+    if (tables.isNotEmpty) await db.clearAll(tables);
+    if (modules.contains('materials')) {
+      await FileStorageService.clearAttachments();
+    }
+    if (delAccount) {
+      await db.deleteUser();
+      await SecureStorageService().clearAll();
+      if (!context.mounted) return;
+      auth.logout();
+    }
   }
 
   Widget _sectionTitle(String t) => Padding(

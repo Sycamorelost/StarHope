@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../providers/home_nav_provider.dart';
 import '../../providers/practice_exam_provider.dart';
 import '../common/bottom_nav_bar.dart';
-import '../common/glass.dart';
 import '../common/page_transitions.dart';
 import '../common/theme.dart';
 import '../common/window_title_bar.dart';
@@ -74,7 +73,6 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                         child: _pages[index],
                       ),
                     ),
-                    const PoweredFooter(),
                   ],
                 ),
               ),

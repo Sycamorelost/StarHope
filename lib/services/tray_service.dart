@@ -25,7 +25,7 @@ class TrayService with TrayListener {
             onClick: (_) => WindowService.show()),
         MenuItem.separator(),
         MenuItem(
-            key: 'exit', label: '退出 StarHope', onClick: (_) => _exit()),
+            key: 'exit', label: '关闭应用', onClick: (_) => _exit()),
       ]));
       TrayManager.instance.addListener(this);
       _initialized = true;
