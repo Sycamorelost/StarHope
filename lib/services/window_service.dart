@@ -44,6 +44,21 @@ class WindowService {
     if (h != 0) PostMessage(h, WM_CLOSE, 0, 0);
   }
 
+  /// 隐藏窗口到系统托盘（彻底从任务栏消失，不同于 minimize）。
+  static void hide() {
+    final h = _findHwnd();
+    if (h != 0) ShowWindow(h, SW_HIDE);
+  }
+
+  /// 从托盘恢复窗口（显示并置前）。
+  static void show() {
+    final h = _findHwnd();
+    if (h != 0) {
+      ShowWindow(h, SW_SHOW);
+      SetForegroundWindow(h);
+    }
+  }
+
   /// 开始拖动窗口（在自定义标题栏按下时调用）。
   static void startDrag() {
     if (!_dragEnabled) return; // 考试全屏中禁拖

@@ -215,6 +215,19 @@ class _SettingsPageState extends State<SettingsPage> {
           // 快捷键与安全
           _sectionTitle('快捷键与安全'),
           _menuTile(
+            icon: Icons.close_rounded,
+            title: '关闭窗口行为',
+            subtitle: '当前：${_closeActionLabel(theme.closeAction)}',
+            onTap: () => _chooseCloseAction(context, theme),
+          ),
+          _switchTile(
+            icon: Icons.lock_clock_outlined,
+            title: '最小化到托盘时自动锁定',
+            subtitle: '隐藏到托盘时立即锁定账户，需重新登录',
+            value: theme.lockOnHide,
+            onChanged: (v) => theme.setLockOnHide(v),
+          ),
+          _menuTile(
             icon: Icons.lock_outline,
             title: '锁定热键',
             subtitle: '当前：${_hotkeyLabel(theme.lockHotkey)}（应用内按下即锁定回登录页）',
@@ -393,6 +406,84 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
+  }
+
+  Widget _switchTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GlassCard(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(fontWeight: FontWeight.w500)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant)),
+                ],
+              ),
+            ),
+            Switch(value: value, onChanged: onChanged),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _closeActionLabel(CloseAction a) {
+    switch (a) {
+      case CloseAction.minimize:
+        return '最小化到托盘';
+      case CloseAction.exit:
+        return '退出应用';
+      case CloseAction.ask:
+        return '每次询问';
+    }
+  }
+
+  Future<void> _chooseCloseAction(
+      BuildContext context, ThemeProvider theme) async {
+    final chosen = await showDialog<CloseAction>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('关闭窗口行为'),
+        children: [
+          for (final a in CloseAction.values)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, a),
+              child: Row(
+                children: [
+                  Icon(
+                    a == theme.closeAction
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(_closeActionLabel(a)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+    if (chosen != null) theme.setCloseAction(chosen);
   }
 
   Widget _socialChip(String k, String v) => Chip(

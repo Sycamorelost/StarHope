@@ -14,6 +14,8 @@ class SecureStorageService {
   static const _kTheme = 'theme_mode';
   static const _kEnterToSend = 'enter_to_send';
   static const _kLockHotkey = 'lock_hotkey';
+  static const _kCloseAction = 'close_action';
+  static const _kLockOnHide = 'lock_on_hide';
 
   Future<void> saveRemember(String account, String ticket) async {
     await _storage.write(key: _kAccount, value: account);
@@ -46,6 +48,19 @@ class SecureStorageService {
       _storage.write(key: _kLockHotkey, value: v);
 
   Future<String?> getLockHotkey() => _storage.read(key: _kLockHotkey);
+
+  // 关闭窗口行为（ask/minimize/exit，默认 ask）
+  Future<void> setCloseAction(String v) =>
+      _storage.write(key: _kCloseAction, value: v);
+
+  Future<String?> getCloseAction() => _storage.read(key: _kCloseAction);
+
+  // 最小化到托盘时自动锁定（默认关闭）
+  Future<void> setLockOnHide(bool v) =>
+      _storage.write(key: _kLockOnHide, value: v.toString());
+
+  Future<bool> getLockOnHide() async =>
+      (await _storage.read(key: _kLockOnHide)) == 'true';
 
   /// 清空全部偏好（一键清空/恢复出厂用）
   Future<void> clearAll() => _storage.deleteAll();
