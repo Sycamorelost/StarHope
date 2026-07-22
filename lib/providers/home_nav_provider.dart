@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// 主界面菜单项（顺序与 HomeShell._pages 一一对应）
-enum HomeTab { summary, bank, wrong, practice, exam, reader, ai, plugins, settings }
+enum HomeTab { learningTools, plugins, summary, ai, settings }
 
 /// 主界面导航状态：暴露给子页切换 Tab（例如错题本「练这些错题」切到练习页）。
 class HomeNavProvider extends ChangeNotifier {

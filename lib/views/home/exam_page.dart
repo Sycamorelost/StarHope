@@ -6,12 +6,12 @@ import '../../core/constants.dart';
 import '../../core/models/models.dart';
 import '../../core/models/question.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/home_nav_provider.dart';
 import '../../providers/practice_exam_provider.dart';
 import '../../providers/question_provider.dart';
 import '../../services/database/database.dart';
 import '../../services/export_service.dart';
 import '../common/glass.dart';
+import 'practice_page.dart';
 import 'widgets/answer_card_dialog.dart';
 import 'widgets/import_export_dialogs.dart';
 import 'widgets/answer_widgets.dart';
@@ -1106,7 +1106,8 @@ class _ExamPageState extends State<ExamPage> {
                   onPressed: () {
                     Navigator.pop(ctx);
                     pe.startPractice(wrongQs, mode: 'instant');
-                    context.read<HomeNavProvider>().switchTo(HomeTab.practice);
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const PracticePage()));
                   },
                 ),
               FilledButton(

@@ -7,11 +7,11 @@ import '../../core/crypto/crypto_service.dart';
 import '../../core/models/models.dart';
 import '../../core/models/question.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/home_nav_provider.dart';
 import '../../providers/practice_exam_provider.dart';
 import '../../services/database/database.dart';
 import '../../services/export_service.dart';
 import '../common/glass.dart';
+import 'practice_page.dart';
 import 'widgets/question_tile.dart';
 
 /// 错题本 -- 侧边栏顶级菜单，与题库同级
@@ -324,7 +324,8 @@ class _WrongBookPageState extends State<WrongBookPage> {
       _selected.clear();
     });
     if (!context.mounted) return;
-    context.read<HomeNavProvider>().switchTo(HomeTab.practice);
+    Navigator.push(
+        context, MaterialPageRoute(builder: (_) => const PracticePage()));
   }
 
   /// 分类筛选条：掌握度 / 分组 / 题型 / 标签 / 来源
