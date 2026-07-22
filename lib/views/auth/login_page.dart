@@ -261,8 +261,9 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 22),
               StarryButton(
-                label: '登 录',
+                label: _busy ? '登 录 中' : '登 录',
                 icon: Icons.login_rounded,
+                isLoading: _busy,
                 onPressed: _busy ? null : _submit,
               ),
               const SizedBox(height: 20),
