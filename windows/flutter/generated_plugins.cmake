@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  flutter_js
   flutter_secure_storage_windows
   sqlite3_flutter_libs
   tray_manager

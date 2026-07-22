@@ -1,0 +1,15 @@
+{
+  "app": "StarHope",
+  "magic": "STARHOPE_PLUGIN",
+  "format_version": 1,
+  "id": "shp.sycamorelost.lottery",
+  "name": "抽奖工具",
+  "version": "1.0.0",
+  "description": "全量抽奖插件：奖品管理/权重/多策略(均匀/按权重/不重复)/抽奖/历史/统计",
+  "entry": "main.js",
+  "permissions": ["log", "storage"],
+  "author": { "signed": false },
+  "extensions": [ { "type": "tool_page", "id": "main", "title": "抽奖", "icon": "casino" } ],
+  "params_schema": {},
+  "files": [ { "name": "main.js", "sha256": "acfd6274ca5dd5cb9dce64186c915700f141783528338da354ffd800e0324334", "size": 7306 } ]
+}

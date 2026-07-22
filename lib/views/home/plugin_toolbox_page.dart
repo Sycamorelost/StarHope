@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/plugin_provider.dart';
 import '../../services/plugin/plugin_service.dart';
 import '../common/glass.dart';
+import '../plugin/plugin_page.dart';
 
 /// 插件工具箱：导入/导出、3 列毛玻璃插件卡（图标/名/作者/版本/开关/设置）、
 /// 单击图标看详情、批量管理、文件夹、下载模板与开发规则。
@@ -228,6 +229,16 @@ class _PluginToolboxPageState extends State<PluginToolboxPage> {
                           ),
                         ),
                         const Spacer(),
+                        TextButton.icon(
+                          onPressed: enabled
+                              ? () => Navigator.push(context,
+                                  MaterialPageRoute(
+                                      builder: (_) => PluginPage(id: id)))
+                              : null,
+                          icon: const Icon(Icons.play_arrow, size: 16),
+                          label:
+                              const Text('打开', style: TextStyle(fontSize: 12)),
+                        ),
                         TextButton.icon(
                           onPressed: () => _showParams(plugin),
                           icon: const Icon(Icons.settings_outlined, size: 16),
