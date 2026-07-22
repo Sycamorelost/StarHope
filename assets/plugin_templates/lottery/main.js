@@ -100,7 +100,7 @@ function historyTab(){
   var statRows = stats.length ? stats.map(function(p){ var c = counts[p.id]||0; return {type:'column', crossAxisAlignment:'stretch', children:[ {type:'row', children:[body(p.name, null), {type:'spacer'}, body(c + ' 次', 'primary')]}, gap(2), {type:'progress', value: c/maxC, color:'primary'}, gap(5) ]}; }) : [muted('暂无中签数据')];
   var hRows = history.slice(0,15).map(function(h){ return {type:'row', children:[muted(h.time), {type:'sizedbox', width:8}, body(h.names.join('、'), null)]}; });
   var rRows = rollHistory.slice(0,15).map(function(h){ return {type:'row', children:[muted(h.time), {type:'sizedbox', width:8}, body(h.names.join('、'), null)]}; });
-  return col([ card('中签统计（共 ' + history.length + ' 次抽奖）', statRows), gap(12), card('抽奖历史（' + history.length + '）', [{type:'button', icon:'delete', variant:'outlined', label:'清空', onTap:'clearHistory'}, gap(6)].concat(hRows)), gap(12), card('点名历史（' + rollHistory.length + '）', [{type:'button', icon:'delete', variant:'outlined', label:'清空', onTap:'clearRollHistory'}, gap(6)].concat(rRows)) ]);
+  return col([ {type:'row', children:[{type:'button', icon:'save', variant:'outlined', label:'导出全部历史到剪贴板', onTap:'exportHistory', expanded:true}]}, gap(12), card('中签统计（共 ' + history.length + ' 次抽奖）', statRows), gap(12), card('抽奖历史（' + history.length + '）', [{type:'button', icon:'delete', variant:'outlined', label:'清空', onTap:'clearHistory'}, gap(6)].concat(hRows)), gap(12), card('点名历史（' + rollHistory.length + '）', [{type:'button', icon:'delete', variant:'outlined', label:'清空', onTap:'clearRollHistory'}, gap(6)].concat(rRows)) ]);
 }
 function schemeTab(){
   var schemes = getSchemes();
@@ -145,6 +145,8 @@ function onAction(name, args){
     case 'spinDraw': spinDraw(); break;
     case 'spinRoll': spinRoll(); break;
     case 'undoDraw': undoDraw(); break;
+    case '__key__': if (args && args.key === 'space') { if (tab === 'roll') spinRoll(); else spinDraw(); } break;
+    case 'exportHistory': exportHistory(); break;
     case 'clearHistory': starhope.storage.set('history', []); break;
     case 'setSchemeName': schemeName = args.value; break;
     case 'saveScheme': saveScheme(); break;
@@ -203,5 +205,6 @@ function undoDraw(){
   var h = getHistory(); if (h.length) h.shift(); starhope.storage.set('history', h);
   lastDrawIds = []; lastResults = []; tierResults = {}; msg = '已撤销上次抽奖';
 }
+function exportHistory(){ var h = getHistory(), rh = getRollHistory(); var lines = ['抽奖历史：']; h.forEach(function(x){ lines.push(x.time + '  ' + x.names.join('、')); }); lines.push('', '点名历史：'); rh.forEach(function(x){ lines.push(x.time + '  ' + x.names.join('、')); }); starhope.storage.set('__clip__', lines.join('\n')); msg = '已导出历史 ' + (h.length + rh.length) + ' 条到剪贴板'; }
 function rollCall(){ var pool = rollPool(); if (!pool.length) { msg = '可点名单为空'; rollResults = []; return; } var batch = Math.min(getRollBatch(), pool.length); var winners = drawN(pool, batch, getRollStrategy()); rollResults = winners.map(function(n){ return n.name; }); var h = getRollHistory(); h.unshift({time: nowStr(), names: rollResults.slice()}); if (h.length > 100) h = h.slice(0, 100); starhope.storage.set('rollHistory', h); if (getRollUnique()) { var rd = getRollDrawn(); winners.forEach(function(n){ rd.push(n.id); }); starhope.storage.set('rollDrawn', rd); } }
 function rollGroup(){ var pool = getNames().filter(function(n){ return !n.leave; }); if (!pool.length) { msg = '名单为空'; rollGroups = []; return; } var gn = S('rollGroupCount', 2); if (gn < 1) gn = 1; var shuffled = pool.slice(); for (var i = shuffled.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = shuffled[i]; shuffled[i] = shuffled[j]; shuffled[j] = tmp; } rollGroups = []; for (var k = 0; k < gn; k++) rollGroups.push([]); shuffled.forEach(function(n, idx){ rollGroups[idx % gn].push(n.name); }); }

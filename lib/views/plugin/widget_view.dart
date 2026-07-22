@@ -58,7 +58,17 @@ class _PluginWidgetViewState extends State<PluginWidgetView> {
     if (_tree == null) {
       return const Center(child: Text('该插件无可渲染界面'));
     }
-    return _build(_tree!);
+    return KeyboardListener(
+      focusNode: FocusNode(),
+      autofocus: true,
+      onKeyEvent: (e) {
+        if (e is KeyDownEvent && e.logicalKey == LogicalKeyboardKey.space) {
+          widget.runtime.action('__key__', {'key': 'space'});
+          _refresh();
+        }
+      },
+      child: _build(_tree!),
+    );
   }
 
   Widget _build(Map<String, dynamic> n) {
