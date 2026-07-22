@@ -20,6 +20,15 @@ class _PluginWidgetViewState extends State<PluginWidgetView> {
   Map<String, dynamic>? _tree;
   final _controllers = <String, TextEditingController>{};
 
+  /// 第三方可注册的扩展渲染器（插件可注册自定义 widget type）。
+  static final Map<String, Widget Function(Map<String, dynamic>)> _extensions = {};
+
+  /// 注册自定义 widget 渲染器，供第三方插件扩展 JSON 节点类型。
+  static void registerWidget(
+      String type, Widget Function(Map<String, dynamic>) builder) {
+    _extensions[type] = builder;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -74,6 +83,8 @@ class _PluginWidgetViewState extends State<PluginWidgetView> {
 
   Widget _build(Map<String, dynamic> n) {
     final type = n['type'] as String? ?? 'text';
+    final ext = _extensions[type];
+    if (ext != null) return ext(n);
     switch (type) {
       case 'column':
         return Column(
