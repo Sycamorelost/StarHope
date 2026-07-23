@@ -9,7 +9,7 @@ function ok(c, l){ if (c) console.log('  ok ' + l); else { console.log('  FAIL '
 var test = '\ntry {\n\
   ok(typeof render === "function", "render");\n\
   ok(typeof rollGroup === "function", "rollGroup");\n\
-  ok(render().type === "column", "render column");\n\
+  ok(render().type === "scroll" && render().child.type === "column", "render scroll+column");\n\
   // 抽奖多档\n\
   [["一等奖A","1"],["一等奖B","1"]].forEach(function(x){ onAction("setName",{value:x[0]}); onAction("setTier",{value:x[1]}); onAction("add"); });\n\
   onAction("setName",{value:"二等奖C"}); onAction("setTier",{value:"2"}); onAction("add");\n\

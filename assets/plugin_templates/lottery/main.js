@@ -1,4 +1,5 @@
-// StarHope 抽奖 & 点名 (shp.sycamorelost.lottery) v17
+// StarHope 抽奖 & 点名 (shp.sycamorelost.lottery) v18
+// v18：内容超一屏可垂直滚动（render 根包 scroll 节点，widget_view 新增 scroll 类型）。
 // v17：导入/导出模板 tab（严格 JSON 格式 + 字段说明 + 复制模板）；中奖/点名结果
 //   独立为大号毛玻璃结果框（滚动中翻滚大字，结束后大号显示，焦点位置）。
 // 既有：单段式 Tab / 复选框正常字号 / 全局消息条 / 打开数据目录 /
@@ -51,7 +52,7 @@ function gap(h){ return {type:'sizedbox', height: h||8}; }
 function bigText(t, size){ return {type:'text', text:t, size:size, weight:'bold', color:'primary'}; }
 
 function render(){
-  return col([
+  return {type:'scroll', child: col([
     header(), gap(10), tabBar(), gap(14),
     tab === 'prizes' ? prizesTab() :
     tab === 'roll' ? rollTab() :
@@ -61,8 +62,8 @@ function render(){
     tab === 'template' ? templateTab() : drawTab(),
     gap(8),
     msg ? msgBox() : gap(0),
-    gap(6)
-  ]);
+    gap(10)
+  ])};
 }
 function msgBox(){
   var color = msgKind === 'error' ? 'error' : (msgKind === 'success' ? 'primary' : 'muted');

@@ -124,6 +124,9 @@ class _PluginWidgetViewState extends State<PluginWidgetView> {
         return Expanded(child: _only(n));
       case 'center':
         return Center(child: _only(n));
+      case 'scroll':
+        // 垂直可滚动：内容超出一屏时滑动查看更多（child 通常是 column）。
+        return SingleChildScrollView(child: _only(n));
       case 'padding':
         final e = (n['edge'] as num?)?.toDouble() ?? 12;
         return Padding(padding: EdgeInsets.all(e), child: _only(n));
