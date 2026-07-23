@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../common/glass.dart';
-import '../common/theme.dart';
-import '../common/window_title_bar.dart';
+import '../common/tool_host.dart';
 import 'exam_page.dart';
 import 'practice_page.dart';
 import 'question_bank_page.dart';
@@ -77,7 +76,7 @@ class LearningToolsPage extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return GlassCard(
       onTap: () => Navigator.push(context,
-          MaterialPageRoute(builder: (_) => _ToolHost(title: title, child: page))),
+          MaterialPageRoute(builder: (_) => ToolHostPage(title: title, child: page))),
       padding: const EdgeInsets.all(12),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -105,31 +104,3 @@ class LearningToolsPage extends StatelessWidget {
   }
 }
 
-/// 学习工具子页宿主：FrostedBackground + 带返回的标题栏 + 功能页。
-/// （功能页 Scaffold 背景需透明，让 FrostedBackground 透出）
-class _ToolHost extends StatelessWidget {
-  final String title;
-  final Widget child;
-  const _ToolHost({required this.title, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return FrostedBackground(
-      child: Column(
-        children: [
-          WindowTitleBar(
-            title: title,
-            leading: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, size: 18),
-                tooltip: '返回',
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-          Expanded(child: child),
-        ],
-      ),
-    );
-  }
-}
