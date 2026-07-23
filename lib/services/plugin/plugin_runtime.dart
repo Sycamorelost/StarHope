@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_js/flutter_js.dart';
 import 'package:path/path.dart' as p;
 
@@ -51,6 +53,50 @@ class PluginRuntime {
     });
     _rt.onMessage('Rerender', (_) => onRerender?.call());
     _rt.onMessage('OpenDataDir', (_) => _openDataDir());
+    // 导出：弹出保存对话框写文件，完成后回调插件全局 onSaved(ok)。
+    _rt.onMessage('SaveText', (args) async {
+      var ok = false;
+      try {
+        final list = args as List;
+        final filename = (list[0] as String?) ?? 'export.txt';
+        final text = (list[1] as String?) ?? '';
+        final out = await FilePicker.platform
+            .saveFile(dialogTitle: '导出', fileName: filename);
+        if (out == null) {
+          _callback('onSaved', [false]);
+          return;
+        }
+        await File(out).writeAsString(text);
+        ok = true;
+      } catch (e) {
+        debugPrint('[plugin:$id] saveText failed: $e');
+      }
+      _callback('onSaved', [ok]);
+    });
+    // 导入：弹出选择对话框读文件，完成后回调插件全局 onImportFile(content|null)。
+    _rt.onMessage('PickTextFile', (_) async {
+      try {
+        final result = await FilePicker.platform.pickFiles(type: FileType.any);
+        final path = result?.files.single.path;
+        if (path == null) {
+          _callback('onImportFile', [null]);
+          return;
+        }
+        final content = await File(path).readAsString();
+        _callback('onImportFile', [content]);
+      } catch (e) {
+        debugPrint('[plugin:$id] pickTextFile failed: $e');
+        _callback('onImportFile', [null]);
+      }
+    });
+    // 写系统剪贴板。
+    _rt.onMessage('SetClipboard', (args) async {
+      try {
+        await Clipboard.setData(ClipboardData(text: args as String? ?? ''));
+      } catch (e) {
+        debugPrint('[plugin:$id] clipboard set failed: $e');
+      }
+    });
     _rt.onMessage('StarhopeStorage', (args) async {
       try {
         final list = args as List;
@@ -82,6 +128,9 @@ class PluginRuntime {
     starhope.randomInt = function(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; };
     starhope.rerender = function(){ sendMessage('Rerender', '{}'); };
     starhope.openDataDir = function(){ sendMessage('OpenDataDir', '{}'); };
+    starhope.saveText = function(filename, text){ sendMessage('SaveText', JSON.stringify([filename, text])); };
+    starhope.pickTextFile = function(){ sendMessage('PickTextFile', '{}'); };
+    starhope.clipboard = { setText: function(t){ sendMessage('SetClipboard', JSON.stringify(t == null ? '' : ('' + t))); } };
   ''';
 
   /// 调用插件 render()，返回 widget 树 JSON 字符串（无 render 返回诊断 JSON）。
@@ -139,6 +188,15 @@ class PluginRuntime {
     } catch (e) {
       debugPrint('[plugin:$id] open data dir failed: $e');
     }
+  }
+
+  /// 调用插件定义的全局回调函数 [fn]（如 onSaved/onImportFile），不存在则忽略。
+  /// 参数按 JSON 编码注入；null 传 JS null。
+  void _callback(String fn, List<Object?> args) {
+    final argStr = args
+        .map((a) => a == null ? 'null' : jsonEncode(a))
+        .join(',');
+    _rt.evaluate("typeof $fn === 'function' && $fn($argStr);");
   }
 
   void dispose() => _rt.dispose();

@@ -1,10 +1,10 @@
 {
   "app": "StarHope", "magic": "STARHOPE_PLUGIN", "format_version": 1,
-  "id": "shp.sycamorelost.lottery", "name": "抽奖 & 点名", "version": "18.0.0",
-  "description": "全量抽奖+点名（v18：内容超屏可垂直滚动；v17：导入导出模板tab含严格JSON格式+字段说明+一键复制、中奖/点名结果独立大号毛玻璃结果框滚动翻滚大字；既有：单段Tab+复选框正常字号+全局消息条+打开数据目录+多档抽奖+多策略+批量+权重+限中+排除+必中+概率+统计+撤销+多格式导入+模块化快照+点名加权请假分组+历史导出）",
+  "id": "shp.sycamorelost.lottery", "name": "抽奖 & 点名", "version": "19.0.0",
+  "description": "全量抽奖+点名（v19：导入导出真正落地——系统保存对话框写文件/文件选择框读文件+真剪贴板，替换原只写内部存储的占位实现；v18：内容超屏可滚动；v17：导入导出模板tab严格JSON格式+大号毛玻璃结果框；既有：单段Tab+复选框正常字号+全局消息条+打开数据目录+多档抽奖+多策略+批量+权重+限中+排除+必中+概率+统计+撤销+点名加权请假分组+历史导出）",
   "entry": "main.js", "permissions": ["log", "storage", "open_dir"],
   "author": { "signed": false },
   "extensions": [ { "type": "tool_page", "id": "main", "title": "抽奖&点名", "icon": "casino" } ],
   "params_schema": {},
-  "files": [ { "name": "main.js", "sha256": "66d93a396c6dbcbe9a0f2598931affa9e04b0103576305a2a9239209eca3ce75", "size": 36372 } ]
+  "files": [ { "name": "main.js", "sha256": "d7529626fc467b10530dcfb463cdccdfb3a2495549b4c16252a93177447f4129", "size": 37203 } ]
 }

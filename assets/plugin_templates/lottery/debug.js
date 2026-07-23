@@ -1,6 +1,6 @@
-// node debug v16：抽奖(多档) + 点名(加权/分组) + 打开数据目录 全量测试
+// node debug v18：抽奖(多档) + 点名(加权/分组) + 文件导入导出 + 模板剪贴板 全量测试
 var storage = {};
-var starhope = { storage: { get: function(k){ return storage[k]; }, set: function(k, v){ storage[k] = v; } }, log: function(){}, random: function(m){ return Math.floor(Math.random() * m); }, openDataDir: function(){} };
+var starhope = { storage: { get: function(k){ return storage[k]; }, set: function(k, v){ storage[k] = v; } }, log: function(){}, random: function(m){ return Math.floor(Math.random() * m); }, rerender: function(){}, openDataDir: function(){}, saveText: function(f, t){ storage._lastSave = t; if (typeof onSaved === 'function') onSaved(true); }, pickTextFile: function(){ if (typeof onImportFile === 'function') onImportFile('[{"name":"导入奖品A"}]'); }, clipboard: { setText: function(t){ storage._clip = t; } } };
 var sendMessage = function(){};
 var fs = require('fs');
 var main = fs.readFileSync(__dirname + '/main.js', 'utf8');
@@ -50,8 +50,10 @@ var test = '\ntry {\n\
   ok(!!render(), "history stats render");\n\
   // tabs\n\
   ["draw","prizes","roll","rollList","history","scheme","template"].forEach(function(t){ onAction("goto:"+t,{}); ok(!!render(), t+" render"); });\n\
-  onAction("goto:template",{}); onAction("copyPrizeTemplate",{}); ok(!!storage["__clip__"], "copy prize template");\n\
-  onAction("goto:scheme",{}); onAction("openDataDir",{}); ok(typeof starhope.openDataDir === "function", "openDataDir");\n\
+  onAction("goto:template",{}); onAction("copyPrizeTemplate",{}); ok(!!storage._clip, "copy template to clipboard");\n\
+  onAction("goto:scheme",{}); onAction("exportJson",{}); ok(!!storage._lastSave && storage._lastSave.indexOf("一等奖A")>=0, "export to file");\n\
+  onAction("importJson",{}); ok(getPrizes().some(function(p){return p.name==="导入奖品A";}), "import from file");\n\
+  onAction("openDataDir",{}); ok(typeof starhope.openDataDir === "function", "openDataDir");\n\
   console.log("\\n=== " + (errs.length===0 ? "ALL PASSED" : (errs.length+" FAILED: "+errs.join("; "))) + " ===");\n\
 } catch (e) { console.log("EXCEPTION: " + e + (e.stack?"\\n"+e.stack:"")); errs.push("ex"); }\n';
 eval(main + test);
