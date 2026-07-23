@@ -1,6 +1,7 @@
-// StarHope 抽奖 & 点名 (shp.sycamorelost.lottery) v16
-// UI 全面打磨：单段式 Tab / 复选框标签正常字号 / 自定义控件布局重排 / 全局消息条 /
-//   打开数据目录(starhope.openDataDir)。功能不变：
+// StarHope 抽奖 & 点名 (shp.sycamorelost.lottery) v17
+// v17：导入/导出模板 tab（严格 JSON 格式 + 字段说明 + 复制模板）；中奖/点名结果
+//   独立为大号毛玻璃结果框（滚动中翻滚大字，结束后大号显示，焦点位置）。
+// 既有：单段式 Tab / 复选框正常字号 / 全局消息条 / 打开数据目录 /
 //   多档抽奖 / 多策略(均匀·加权) / 批量 / 权重 / 限中 / 排除 / 必中 / 概率 / 中签统计 /
 //   撤销 / 多格式导入 / 模块化快照 / 点名加权·请假·随机分组 / 历史导出。
 starhope.title = '抽奖 & 点名';
@@ -12,6 +13,7 @@ var tierResults = {};
 var rollResults = [];
 var rollGroups = [];
 var lastDrawIds = [];
+var rolling = false; // 滚动动画进行中（控制大号结果框显示翻滚态）
 var msg = '';
 var msgKind = 'info';
 var tab = 'draw';
@@ -46,7 +48,7 @@ function h2(t){ return {type:'text', text:t, size:14, weight:'bold'}; }
 function body(t, color){ return {type:'text', text:t, size:13, color: color || null}; }
 function muted(t){ return {type:'text', text:t, size:11, color:'muted'}; }
 function gap(h){ return {type:'sizedbox', height: h||8}; }
-function resultText(t){ return {type:'text', text:t, size:18, weight:'bold', color:'primary'}; }
+function bigText(t, size){ return {type:'text', text:t, size:size, weight:'bold', color:'primary'}; }
 
 function render(){
   return col([
@@ -55,7 +57,8 @@ function render(){
     tab === 'roll' ? rollTab() :
     tab === 'rollList' ? rollListTab() :
     tab === 'history' ? historyTab() :
-    tab === 'scheme' ? schemeTab() : drawTab(),
+    tab === 'scheme' ? schemeTab() :
+    tab === 'template' ? templateTab() : drawTab(),
     gap(8),
     msg ? msgBox() : gap(0),
     gap(6)
@@ -69,7 +72,8 @@ function header(){ return {type:'row', children:[ h1('抽奖 & 点名'), {type:'
 function tabBar(){
   return {type:'segmented', value: tab, options:[
     {value:'draw', label:'抽奖'}, {value:'prizes', label:'奖品'}, {value:'roll', label:'点名'},
-    {value:'rollList', label:'名单'}, {value:'history', label:'历史'}, {value:'scheme', label:'方案'}
+    {value:'rollList', label:'名单'}, {value:'history', label:'历史'}, {value:'scheme', label:'方案'},
+    {value:'template', label:'模板'}
   ], onChanged:'setTab'};
 }
 
@@ -86,7 +90,6 @@ function prizesTab(){
 
 function drawTab(){
   var prizes = getPrizes(); var pool = poolInfo();
-  var resultKids = lastResults.length ? [{type:'center', child:{type:'column', children: lastResults.map(function(n, i){ return resultText((i+1) + '. ' + n); })}}] : [muted('点击「开始抽奖」抽取中奖者')];
   var tierKids = [];
   [1,2,3].forEach(function(t){ var arr = tierResults[t] || []; if (arr.length) { tierKids.push({type:'row', children:[badge(tierName(t), 'primary'), {type:'sizedbox', width:8}, body(arr.join('、'), null)]}); tierKids.push(gap(4)); } });
   var prev = gap(0);
@@ -94,14 +97,31 @@ function drawTab(){
     var total = pool.reduce(function(a, x){ return a + (parseInt(x.weight)||1); }, 0);
     prev = card('中签概率（按权重）', pool.map(function(p){ var frac = total > 0 ? (parseInt(p.weight)||1) / total : 0; var pct = (frac * 100).toFixed(1); return {type:'column', crossAxisAlignment:'stretch', children:[ {type:'row', children:[body(p.name, null), {type:'spacer'}, body(pct + '%', 'primary')]}, gap(3), {type:'progress', value:frac, color:'primary'}, gap(6) ]}; }));
   }
-  return col([ card('抽奖设置', [ h2('抽取策略'), gap(4), {type:'segmented', value:getStrategy(), options:[{value:'uniform', label:'均匀随机'},{value:'weighted', label:'按权重'}], onChanged:'setStrategy'}, gap(10), {type:'checkbox', value:getUnique(), size:13, label:'不重复抽取（抽中即移出奖池）', onChanged:'setUnique'}, gap(8), {type:'row', children:[body('每次抽取个数'), {type:'sizedbox', width:8}, {type:'sizedbox', width:72, child:{type:'textfield', key:'batch', label:'个数', value:''+getBatch(), keyboard:'number', onChanged:'setBatch'}}]}, gap(6), (getUnique() || pool.length < prizes.length) ? muted('奖池剩余 ' + pool.length + ' / ' + prizes.length) : gap(0) ]), gap(12), card('开始抽奖', [ {type:'button', icon:'casino', label: pool.length ? '开始抽奖' : '奖池为空', onTap:'spinDraw', expanded:true}, gap(6), getUnique() ? {type:'button', icon:'refresh', variant:'outlined', label:'重置奖池与限中', onTap:'resetDrawn', expanded:true} : gap(0), lastDrawIds.length ? {type:'button', icon:'undo', variant:'outlined', label:'撤销上次抽奖', onTap:'undoDraw', expanded:true} : gap(0), gap(12) ].concat(resultKids)), gap(12), card('多档抽奖', [ muted('按一/二/三等奖各抽取 ' + getBatch() + ' 个'), gap(8), {type:'button', icon:'star', variant:'tonal', label:'按档位各抽', onTap:'drawTiered', expanded:true}, gap(10) ].concat(tierKids.length ? [{type:'divider'}, gap(8)] : []).concat(tierKids)), gap(12), prev ]);
+  return col([
+    resultCard(false),
+    gap(12),
+    card('抽奖设置', [ h2('抽取策略'), gap(4), {type:'segmented', value:getStrategy(), options:[{value:'uniform', label:'均匀随机'},{value:'weighted', label:'按权重'}], onChanged:'setStrategy'}, gap(10), {type:'checkbox', value:getUnique(), size:13, label:'不重复抽取（抽中即移出奖池）', onChanged:'setUnique'}, gap(8), {type:'row', children:[body('每次抽取个数'), {type:'sizedbox', width:8}, {type:'sizedbox', width:72, child:{type:'textfield', key:'batch', label:'个数', value:''+getBatch(), keyboard:'number', onChanged:'setBatch'}}]}, gap(6), (getUnique() || pool.length < prizes.length) ? muted('奖池剩余 ' + pool.length + ' / ' + prizes.length) : gap(0) ]),
+    gap(12),
+    card('开始抽奖', [ {type:'button', icon:'casino', label: pool.length ? '开始抽奖' : '奖池为空', onTap:'spinDraw', expanded:true}, gap(8), getUnique() ? {type:'button', icon:'refresh', variant:'outlined', label:'重置奖池与限中', onTap:'resetDrawn', expanded:true} : gap(0), lastDrawIds.length ? {type:'button', icon:'undo', variant:'outlined', label:'撤销上次抽奖', onTap:'undoDraw', expanded:true} : gap(0) ]),
+    gap(12),
+    card('多档抽奖', [ muted('按一/二/三等奖各抽取 ' + getBatch() + ' 个'), gap(8), {type:'button', icon:'star', variant:'tonal', label:'按档位各抽', onTap:'drawTiered', expanded:true}, gap(10) ].concat(tierKids.length ? [{type:'divider'}, gap(8)] : []).concat(tierKids)),
+    gap(12),
+    prev
+  ]);
 }
 
 function rollTab(){
   var names = getNames(); var pool = rollPool();
-  var resultKids = rollResults.length ? [{type:'center', child:{type:'column', children: rollResults.map(function(n, i){ return resultText((i+1) + '. ' + n); })}}] : [muted('点击「开始点名」随机抽取')];
   var groupKids = rollGroups.length ? [{type:'divider'}, gap(8)].concat(rollGroups.map(function(g, i){ return {type:'row', children:[badge('第 ' + (i+1) + ' 组', 'primary'), {type:'sizedbox', width:8}, body(g.join('、'), null)]}; })) : [];
-  return col([ card('点名设置', [ h2('点名策略'), gap(4), {type:'segmented', value:getRollStrategy(), options:[{value:'uniform', label:'均匀'}, {value:'weighted', label:'按权重'}], onChanged:'setRollStrategy'}, gap(10), {type:'checkbox', value:getRollUnique(), size:13, label:'不重复点名（本轮点过不再点）', onChanged:'setRollUnique'}, gap(8), {type:'row', children:[body('每次点名人数'), {type:'sizedbox', width:8}, {type:'sizedbox', width:72, child:{type:'textfield', key:'rbatch', label:'人数', value:''+getRollBatch(), keyboard:'number', onChanged:'setRollBatch'}}]}, gap(6), pool.length < names.length ? muted('可点 ' + pool.length + ' / ' + names.length) : gap(0), gap(8), {type:'button', icon:'refresh', variant:'outlined', label:'重置点名记录', onTap:'resetRollDrawn', expanded:true} ]), gap(12), card('随机点名', [ {type:'button', icon:'shuffle', label: pool.length ? '开始点名' : '名单为空', onTap:'spinRoll', expanded:true}, gap(12) ].concat(resultKids)), gap(12), card('随机分组', [ {type:'row', children:[body('分成几组'), {type:'sizedbox', width:8}, {type:'sizedbox', width:72, child:{type:'textfield', key:'gcount', label:'组数', value:'' + (S('rollGroupCount', 2)), keyboard:'number', onChanged:'setGroupCount'}}]}, gap(8), {type:'button', icon:'list', variant:'tonal', label:'随机分组', onTap:'rollGroup', expanded:true}, gap(8) ].concat(groupKids)) ]);
+  return col([
+    resultCard(true),
+    gap(12),
+    card('点名设置', [ h2('点名策略'), gap(4), {type:'segmented', value:getRollStrategy(), options:[{value:'uniform', label:'均匀'}, {value:'weighted', label:'按权重'}], onChanged:'setRollStrategy'}, gap(10), {type:'checkbox', value:getRollUnique(), size:13, label:'不重复点名（本轮点过不再点）', onChanged:'setRollUnique'}, gap(8), {type:'row', children:[body('每次点名人数'), {type:'sizedbox', width:8}, {type:'sizedbox', width:72, child:{type:'textfield', key:'rbatch', label:'人数', value:''+getRollBatch(), keyboard:'number', onChanged:'setRollBatch'}}]}, gap(6), pool.length < names.length ? muted('可点 ' + pool.length + ' / ' + names.length) : gap(0), gap(8), {type:'button', icon:'refresh', variant:'outlined', label:'重置点名记录', onTap:'resetRollDrawn', expanded:true} ]),
+    gap(12),
+    card('随机点名', [ {type:'button', icon:'shuffle', label: pool.length ? '开始点名' : '名单为空', onTap:'spinRoll', expanded:true} ]),
+    gap(12),
+    card('随机分组', [ {type:'row', children:[body('分成几组'), {type:'sizedbox', width:8}, {type:'sizedbox', width:72, child:{type:'textfield', key:'gcount', label:'组数', value:'' + (S('rollGroupCount', 2)), keyboard:'number', onChanged:'setGroupCount'}}]}, gap(8), {type:'button', icon:'list', variant:'tonal', label:'随机分组', onTap:'rollGroup', expanded:true}, gap(8) ].concat(groupKids))
+  ]);
 }
 function rollListTab(){
   var names = getNames(); var rollDrawn = getRollDrawn();
@@ -141,6 +161,66 @@ function card(title, children){ var c = []; if (title) { c.push(h2(title)); c.pu
 function chip(text){ return {type:'card', padding:5, child: muted(text)}; }
 function badge(text, color){ return {type:'badge', text: text, color: color || 'primary'}; }
 function emptyNode(title, subtitle, icon, actionLabel, action){ return {type:'empty', title: title, subtitle: subtitle, icon: icon, actionLabel: actionLabel, action: action}; }
+
+// ===== 严格格式模板（导入/导出规范，模板 tab 展示 + 一键复制） =====
+var PRIZE_TEMPLATE = '[\n  {"name":"一等奖","weight":1,"maxCount":0,"tier":1},\n  {"name":"二等奖","weight":2,"maxCount":1,"tier":2}\n]';
+var NAME_JSON_TEMPLATE = '[\n  {"name":"张三","weight":1},\n  {"name":"李四","weight":3}\n]';
+var NAME_CSV_TEMPLATE = '张三,李四,王五\n赵六\n（可选表头：姓名,权重）';
+var SNAPSHOT_TEMPLATE = '{\n  "content_type":"lottery_full_snapshot",\n  "prizes":[ ... ],\n  "names":[ ... ],\n  "history":[ ],\n  "rollHistory":[ ],\n  "settings":{\n    "strategy":"uniform","unique":false,"batch":1,\n    "rollStrategy":"uniform","rollUnique":true,"rollBatch":1\n  }\n}';
+
+/// 大号毛玻璃结果框：滚动中翻滚大字，结束后大号显示中签者，空态给提示。
+function resultCard(isRoll){
+  var results = isRoll ? rollResults : lastResults;
+  var label = isRoll ? '点名结果' : '抽奖结果';
+  var kids;
+  if (rolling && results.length) {
+    kids = [gap(10), {type:'center', child: bigText(results[0], 36)}, gap(6), {type:'center', child: muted('滚动中…')}, gap(8)];
+  } else if (results.length) {
+    var multi = results.length > 1;
+    kids = [gap(8)];
+    results.forEach(function(n, i){ kids.push({type:'center', child: bigText((multi ? (i+1) + '. ' : '') + n, multi ? 24 : 34)}); });
+    kids.push(gap(8));
+  } else {
+    kids = [gap(12), {type:'center', child: muted(isRoll ? '点击「开始点名」抽取' : '点击「开始抽奖」抽取')}, gap(12)];
+  }
+  return card(label, kids);
+}
+
+function codeBlock(t){ return {type:'card', padding:10, child: {type:'text', text:t, size:12}}; }
+function fieldRow(k, v){ return {type:'row', crossAxisAlignment:'start', children:[ {type:'sizedbox', width:92, child:{type:'text', text:k, size:12, weight:'bold', color:'primary'}}, {type:'expanded', child:{type:'text', text:v, size:12}} ]}; }
+
+function templateTab(){
+  return col([
+    card('奖品 JSON 格式（导入 / 导出）', [
+      muted('字段：name 必填；weight / maxCount / tier 可选（默认 1 / 0 / 1）。id / exclude / must 导入时忽略并自动重置。'),
+      gap(8), codeBlock(PRIZE_TEMPLATE), gap(8),
+      {type:'button', icon:'save', variant:'outlined', label:'复制奖品模板到剪贴板', onTap:'copyPrizeTemplate', expanded:true}
+    ]),
+    gap(12),
+    card('名单格式（导入 / 导出）', [
+      muted('支持 JSON 数组、CSV、TXT（逗号 / 换行 / 分号分隔）。JSON 每项可带 weight。'),
+      gap(8), h2('JSON'), gap(4), codeBlock(NAME_JSON_TEMPLATE),
+      gap(6), h2('CSV / TXT'), gap(4), codeBlock(NAME_CSV_TEMPLATE), gap(8),
+      {type:'button', icon:'save', variant:'outlined', label:'复制名单模板到剪贴板', onTap:'copyNameTemplate', expanded:true}
+    ]),
+    gap(12),
+    card('完整快照（全量备份 / 恢复）', [
+      muted('content_type 必须为 lottery_full_snapshot；含奖品 + 名单 + 历史 + 设置。建议从「方案」tab 一键导出/恢复，无需手写。'),
+      gap(8), codeBlock(SNAPSHOT_TEMPLATE), gap(8),
+      {type:'button', icon:'save', variant:'tonal', label:'复制完整快照模板到剪贴板', onTap:'copySnapshotTemplate', expanded:true}
+    ]),
+    gap(12),
+    card('字段说明', [
+      fieldRow('name', '名称（奖品名 / 姓名），必填'),
+      fieldRow('weight', '权重，正整数，默认 1，越大越易中'),
+      fieldRow('maxCount', '限中次数：0=无限，>0 抽满即移出奖池'),
+      fieldRow('tier', '档位 1/2/3（一/二/三等奖），默认 1'),
+      fieldRow('exclude', 'true=已排除不参与（导出含，导入忽略）'),
+      fieldRow('must', 'true=必中（导出含，导入忽略）'),
+      fieldRow('leave', 'true=请假（姓名，导出含，导入忽略）')
+    ])
+  ]);
+}
 
 function poolInfo(){ var counts = getCounts(), drawn = getDrawn(); return getPrizes().filter(function(p){ if (p.exclude) return false; if (p.maxCount > 0 && (counts[p.id]||0) >= p.maxCount) return false; if (getUnique() && drawn.indexOf(p.id) >= 0) return false; return true; }); }
 function rollPool(){ var rd = getRollDrawn(); return getNames().filter(function(n){ return !n.leave && !(getRollUnique() && rd.indexOf(n.id) >= 0); }); }
@@ -198,6 +278,9 @@ function onAction(name, args){
     case 'clearRollHistory': starhope.storage.set('rollHistory', []); break;
     case 'exportNames': starhope.storage.set('__clip__', JSON.stringify(getNames().map(function(n){ return {name: n.name, weight: n.weight||1}; }))); notify('已导出 ' + getNames().length + ' 人到剪贴板', 'success'); break;
     case 'importNames': importNames(); break;
+    case 'copyPrizeTemplate': starhope.storage.set('__clip__', PRIZE_TEMPLATE); notify('已复制奖品模板到剪贴板', 'success'); break;
+    case 'copyNameTemplate': starhope.storage.set('__clip__', NAME_JSON_TEMPLATE); notify('已复制名单模板到剪贴板', 'success'); break;
+    case 'copySnapshotTemplate': starhope.storage.set('__clip__', SNAPSHOT_TEMPLATE); notify('已复制完整快照模板到剪贴板', 'success'); break;
   }
 }
 
@@ -211,15 +294,17 @@ function recordWinners(winners){ var h = getHistory(); h.unshift({time: nowStr()
 function spinDraw(){
   var pool = poolInfo();
   if (!pool.length) { notify('奖池为空', 'error'); starhope.rerender(); return; }
+  rolling = true;
   var spins = 0, maxSpins = 10;
-  function step(){ if (spins < maxSpins) { lastResults = [pool[Math.floor(Math.random()*pool.length)].name]; notify('滚动中...', 'info'); starhope.rerender(); spins++; setTimeout(step, 70 + spins * 20); } else { draw(); starhope.rerender(); } }
+  function step(){ if (spins < maxSpins) { lastResults = [pool[Math.floor(Math.random()*pool.length)].name]; starhope.rerender(); spins++; setTimeout(step, 70 + spins * 20); } else { rolling = false; draw(); starhope.rerender(); } }
   step();
 }
 function spinRoll(){
   var pool = rollPool();
   if (!pool.length) { notify('可点名单为空', 'error'); rollResults = []; starhope.rerender(); return; }
+  rolling = true;
   var spins = 0, maxSpins = 10;
-  function step(){ if (spins < maxSpins) { rollResults = [pool[Math.floor(Math.random()*pool.length)].name]; notify('滚动中...', 'info'); starhope.rerender(); spins++; setTimeout(step, 70 + spins * 20); } else { rollCall(); starhope.rerender(); } }
+  function step(){ if (spins < maxSpins) { rollResults = [pool[Math.floor(Math.random()*pool.length)].name]; starhope.rerender(); spins++; setTimeout(step, 70 + spins * 20); } else { rolling = false; rollCall(); starhope.rerender(); } }
   step();
 }
 function draw(){ var pool = poolInfo(); if (!pool.length) { notify('奖池为空', 'error'); return; } var must = pool.filter(function(p){ return p.must; }); var rest = pool.filter(function(p){ return !p.must; }); var batch = Math.min(getBatch(), pool.length); var winners = must.slice(0, batch); var need = batch - winners.length; winners = winners.concat(drawN(rest, need, getStrategy())); lastResults = winners.map(function(p){ return p.name; }); recordWinners(winners); lastDrawIds = winners.map(function(p){ return p.id; }); }

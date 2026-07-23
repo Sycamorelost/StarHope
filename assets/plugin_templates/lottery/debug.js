@@ -49,7 +49,8 @@ var test = '\ntry {\n\
   onAction("goto:history",{});\n\
   ok(!!render(), "history stats render");\n\
   // tabs\n\
-  ["draw","prizes","roll","rollList","history","scheme"].forEach(function(t){ onAction("goto:"+t,{}); ok(!!render(), t+" render"); });\n\
+  ["draw","prizes","roll","rollList","history","scheme","template"].forEach(function(t){ onAction("goto:"+t,{}); ok(!!render(), t+" render"); });\n\
+  onAction("goto:template",{}); onAction("copyPrizeTemplate",{}); ok(!!storage["__clip__"], "copy prize template");\n\
   onAction("goto:scheme",{}); onAction("openDataDir",{}); ok(typeof starhope.openDataDir === "function", "openDataDir");\n\
   console.log("\\n=== " + (errs.length===0 ? "ALL PASSED" : (errs.length+" FAILED: "+errs.join("; "))) + " ===");\n\
 } catch (e) { console.log("EXCEPTION: " + e + (e.stack?"\\n"+e.stack:"")); errs.push("ex"); }\n';
