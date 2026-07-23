@@ -48,6 +48,7 @@ class PluginRuntime {
       debugPrint('[plugin:$id] $args');
     });
     _rt.onMessage('Rerender', (_) => onRerender?.call());
+    _rt.onMessage('OpenDataDir', (_) => _openDataDir());
     _rt.onMessage('StarhopeStorage', (args) async {
       try {
         final list = args as List;
@@ -78,6 +79,7 @@ class PluginRuntime {
     starhope.random = function(max){ return Math.floor(Math.random() * max); };
     starhope.randomInt = function(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; };
     starhope.rerender = function(){ sendMessage('Rerender', '{}'); };
+    starhope.openDataDir = function(){ sendMessage('OpenDataDir', '{}'); };
   ''';
 
   /// 调用插件 render()，返回 widget 树 JSON 字符串（无 render 返回诊断 JSON）。
@@ -116,6 +118,25 @@ class PluginRuntime {
         "typeof starhope !== 'undefined' && starhope.title ? starhope.title : ''");
     final s = r.stringResult;
     return s.isEmpty ? id : s;
+  }
+
+  /// 在系统文件管理器中打开本插件的数据目录（<dataRoot>/plugins/<id>/）。
+  /// 安全考量：不接受任意路径参数，只能打开该插件自身目录。
+  Future<void> _openDataDir() async {
+    try {
+      final dir = _storageFile.parent;
+      if (!await dir.exists()) await dir.create(recursive: true);
+      final path = dir.path;
+      if (Platform.isWindows) {
+        await Process.run('explorer.exe', [path]);
+      } else if (Platform.isMacOS) {
+        await Process.run('open', [path]);
+      } else {
+        await Process.run('xdg-open', [path]);
+      }
+    } catch (e) {
+      debugPrint('[plugin:$id] open data dir failed: $e');
+    }
   }
 
   void dispose() => _rt.dispose();

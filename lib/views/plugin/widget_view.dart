@@ -179,7 +179,17 @@ class _PluginWidgetViewState extends State<PluginWidgetView> {
             value: n['value'] == true,
             onChanged: (v) => _action(n['onChanged'] as String?, args: {'value': v}),
           ),
-          if (n['label'] != null) Text('${n['label']}'),
+          if (n['label'] != null)
+            Flexible(
+              child: Text(
+                '${n['label']}',
+                style: TextStyle(
+                  // 显式正常字号：避免裸 Text 继承默认字号（相对周围 11–13pt 文本显大）
+                  fontSize: (n['size'] as num?)?.toDouble() ?? 13,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ),
         ]);
       case 'segmented':
         final opts = (n['options'] as List?) ?? const [];
@@ -405,12 +415,20 @@ class _PluginWidgetViewState extends State<PluginWidgetView> {
         return Icons.shuffle;
       case 'refresh':
         return Icons.refresh;
+      case 'undo':
+        return Icons.undo;
       case 'save':
         return Icons.save_outlined;
       case 'star':
         return Icons.star;
       case 'gift':
         return Icons.card_giftcard;
+      case 'folder':
+        return Icons.folder_open;
+      case 'close':
+        return Icons.close;
+      case 'open':
+        return Icons.open_in_new;
       default:
         return Icons.extension;
     }

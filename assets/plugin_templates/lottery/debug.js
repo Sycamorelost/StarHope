@@ -1,6 +1,6 @@
-// node debug v7：抽奖(多档) + 点名(加权/分组) 全量测试
+// node debug v16：抽奖(多档) + 点名(加权/分组) + 打开数据目录 全量测试
 var storage = {};
-var starhope = { storage: { get: function(k){ return storage[k]; }, set: function(k, v){ storage[k] = v; } }, log: function(){}, random: function(m){ return Math.floor(Math.random() * m); } };
+var starhope = { storage: { get: function(k){ return storage[k]; }, set: function(k, v){ storage[k] = v; } }, log: function(){}, random: function(m){ return Math.floor(Math.random() * m); }, openDataDir: function(){} };
 var sendMessage = function(){};
 var fs = require('fs');
 var main = fs.readFileSync(__dirname + '/main.js', 'utf8');
@@ -50,6 +50,7 @@ var test = '\ntry {\n\
   ok(!!render(), "history stats render");\n\
   // tabs\n\
   ["draw","prizes","roll","rollList","history","scheme"].forEach(function(t){ onAction("goto:"+t,{}); ok(!!render(), t+" render"); });\n\
+  onAction("goto:scheme",{}); onAction("openDataDir",{}); ok(typeof starhope.openDataDir === "function", "openDataDir");\n\
   console.log("\\n=== " + (errs.length===0 ? "ALL PASSED" : (errs.length+" FAILED: "+errs.join("; "))) + " ===");\n\
 } catch (e) { console.log("EXCEPTION: " + e + (e.stack?"\\n"+e.stack:"")); errs.push("ex"); }\n';
 eval(main + test);
