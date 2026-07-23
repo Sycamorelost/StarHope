@@ -2,7 +2,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/constants.dart';
 import '../../core/models/models.dart';
 import '../../providers/reader_provider.dart';
 import '../common/glass.dart';
@@ -195,7 +194,3 @@ class _ReaderPageState extends State<ReaderPage> {
     }
   }
 }
-
-// 引用常量避免未使用
-// ignore: unused_element
-const String _kApp = AppConstants.appName;

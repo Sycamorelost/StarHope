@@ -6,6 +6,29 @@ import 'package:flutter/services.dart';
 import '../../services/plugin/plugin_runtime.dart';
 import '../common/glass.dart';
 
+/// 插件自定义 widget 渲染器注册表（公开扩展点）。
+///
+/// 第三方可在应用启动时调用 [register] 注册自定义 JSON 节点类型，渲染时优先于内置类型。
+/// 此前该注册表挂在私有 `_PluginWidgetViewState` 上，外部无法访问，等同死代码；
+/// 现提为公开顶层类，既消除 analyzer 警告，也让扩展点真正可用。
+class PluginWidgetRegistry {
+  PluginWidgetRegistry._();
+
+  static final Map<String, Widget Function(Map<String, dynamic>)> _builders = {};
+
+  /// 注册自定义 widget 渲染器：插件 JSON 中 `type` 命中 [type] 时由 [builder] 渲染。
+  static void register(
+      String type, Widget Function(Map<String, dynamic>) builder) {
+    _builders[type] = builder;
+  }
+
+  /// 按 `n['type']` 查找已注册渲染器并渲染；未注册返回 null（回退内置 switch）。
+  static Widget? build(Map<String, dynamic> n) {
+    final b = _builders[n['type'] as String?];
+    return b == null ? null : b(n);
+  }
+}
+
 /// 把插件 render() 返回的 JSON widget 树渲染为 Flutter 组件。
 /// 事件（onTap/onChanged）回调插件的 onAction(name, args)。
 class PluginWidgetView extends StatefulWidget {
@@ -19,15 +42,6 @@ class PluginWidgetView extends StatefulWidget {
 class _PluginWidgetViewState extends State<PluginWidgetView> {
   Map<String, dynamic>? _tree;
   final _controllers = <String, TextEditingController>{};
-
-  /// 第三方可注册的扩展渲染器（插件可注册自定义 widget type）。
-  static final Map<String, Widget Function(Map<String, dynamic>)> _extensions = {};
-
-  /// 注册自定义 widget 渲染器，供第三方插件扩展 JSON 节点类型。
-  static void registerWidget(
-      String type, Widget Function(Map<String, dynamic>) builder) {
-    _extensions[type] = builder;
-  }
 
   @override
   void initState() {
@@ -83,8 +97,8 @@ class _PluginWidgetViewState extends State<PluginWidgetView> {
 
   Widget _build(Map<String, dynamic> n) {
     final type = n['type'] as String? ?? 'text';
-    final ext = _extensions[type];
-    if (ext != null) return ext(n);
+    final ext = PluginWidgetRegistry.build(n);
+    if (ext != null) return ext;
     switch (type) {
       case 'column':
         return Column(

@@ -1151,6 +1151,3 @@ String? _nbe(Object? v) {
   return s;
 }
 
-// 引用以避免常量被 tree-shake 警告
-// ignore: unused_element
-const int _kFmtVersion = AppConstants.formatVersion;

@@ -765,7 +765,3 @@ class _SettingsPageState extends State<SettingsPage> {
     if (ok == true) auth.logout();
   }
 }
-
-// 引用常量
-// ignore: unused_element
-const String _kApp = AppConstants.appName;

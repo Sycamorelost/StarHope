@@ -31,7 +31,9 @@ class PluginRuntime {
       try {
         storage =
             jsonDecode(await storageFile.readAsString()) as Map<String, dynamic>;
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[plugin:$id] storage.json parse failed: $e');
+      }
     }
     final inst = PluginRuntime._(id, rt, storageFile, storage);
     inst._setupHost();

@@ -548,7 +548,3 @@ class ShareMetaCard extends StatelessWidget {
     }
   }
 }
-
-// 引用常量避免未使用
-// ignore: unused_element
-const String _kApp = AppConstants.appName;

@@ -946,6 +946,3 @@ class CryptoServiceId {
   static String gen() => CryptoService.generateId();
 }
 
-// 引用常量避免 lint 未使用
-// ignore: unused_element
-const int _kVer = AppConstants.formatVersion;

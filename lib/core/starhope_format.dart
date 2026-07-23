@@ -6,7 +6,6 @@ import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
 
 import 'constants.dart';
-import 'crypto/crypto_service.dart';
 import 'models/share_meta.dart';
 
 /// .starhope 文件格式 —— 导出 / 导入 / 防伪校验（核心层）
@@ -152,7 +151,3 @@ class StarHopeFile {
   }
 }
 
-// 便于其他模块复用 CryptoService 的 ID 生成
-// （CryptoService.generateId 在此文件未直接使用，保留以备扩展）
-// ignore: unused_element
-void _ensureCryptoLinked() => CryptoService.generateId();

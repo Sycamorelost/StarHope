@@ -1115,7 +1115,3 @@ class _WrongBookPageState extends State<WrongBookPage> {
     );
   }
 }
-
-// 引用常量
-// ignore: unused_element
-const String _kApp = AppConstants.appName;

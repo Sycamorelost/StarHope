@@ -9,7 +9,6 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:pdfrx/pdfrx.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/constants.dart';
 import '../../core/models/models.dart';
 import '../../providers/reader_provider.dart';
 import '../common/glass.dart';
@@ -187,7 +186,9 @@ class _ReaderViewerPageState extends State<ReaderViewerPage> {
         if (pts.isNotEmpty) {
           _textStrokesByPage.putIfAbsent(page, () => []).add(_Stroke(n.id, pts));
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('skip malformed stroke note: $e');
+      }
     }
   }
 
@@ -1256,7 +1257,3 @@ class _PdfHighlightPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _PdfHighlightPainter old) => true;
 }
-
-// 引用常量
-// ignore: unused_element
-const String _kApp = AppConstants.appName;
