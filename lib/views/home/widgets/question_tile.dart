@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 import '../../../core/constants.dart';
-import '../../../core/formula_render.dart';
+import '../../common/formula_render.dart';
 import '../../../core/models/question.dart';
 import '../../common/glass.dart';
 

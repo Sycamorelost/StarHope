@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/formula_render.dart';
+import '../../common/formula_render.dart';
 
 /// 公式与符号工具栏：插入到任意 [TextEditingController] 的光标处。
 ///
