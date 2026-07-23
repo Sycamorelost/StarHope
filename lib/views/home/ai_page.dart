@@ -11,6 +11,7 @@ import '../../providers/ai_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/file_storage_service.dart';
+import '../common/cached_file_avatar.dart';
 import '../common/glass.dart';
 import '../common/theme.dart';
 
@@ -362,10 +363,7 @@ class _AIPageState extends State<AIPage> {
               color: cs.surfaceContainerHighest,
             ),
             clipBehavior: Clip.antiAlias,
-            child: (a.isImage && File(a.storedPath).existsSync())
-                ? Image.file(File(a.storedPath), fit: BoxFit.cover)
-                : Icon(Icons.insert_drive_file_outlined,
-                    size: 20, color: cs.onSurfaceVariant),
+            child: _AttachmentThumb(attachment: a),
           ),
           Positioned(
             right: 0,
@@ -653,15 +651,55 @@ class AgentManagementPage extends StatelessWidget {
 
 /// 智能体头像（本地文件优先，缺失回退机器人图标）
 Widget avatarCircle(String? path, double radius) {
-  if (path != null && File(path).existsSync()) {
-    return CircleAvatar(
-        radius: radius, backgroundImage: FileImage(File(path)));
-  }
-  return CircleAvatar(
+  return CachedFileCircleAvatar(
+    path: path,
     radius: radius,
     backgroundColor: Colors.transparent,
-    child: Icon(Icons.smart_toy, size: radius * 1.3),
+    fallback: Icon(Icons.smart_toy, size: radius * 1.3),
   );
+}
+
+/// 附件缩略图：图片存在则显示缩略图，否则文件图标。
+/// 存在性检查（阻塞 IO）与 [FileImage] 在 initState 缓存，避免聊天流式 rebuild 时每帧重查。
+class _AttachmentThumb extends StatefulWidget {
+  final AttachmentMeta attachment;
+  const _AttachmentThumb({required this.attachment});
+  @override
+  State<_AttachmentThumb> createState() => _AttachmentThumbState();
+}
+
+class _AttachmentThumbState extends State<_AttachmentThumb> {
+  FileImage? _image;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AttachmentThumb oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final a = widget.attachment;
+    final old = oldWidget.attachment;
+    if (a.storedPath != old.storedPath || a.isImage != old.isImage) _load();
+  }
+
+  void _load() {
+    final a = widget.attachment;
+    _image = (a.isImage && File(a.storedPath).existsSync())
+        ? FileImage(File(a.storedPath))
+        : null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return _image != null
+        ? Image(image: _image!, fit: BoxFit.cover)
+        : Icon(Icons.insert_drive_file_outlined,
+            size: 20, color: cs.onSurfaceVariant);
+  }
 }
 
 /// 智能体编辑/新建弹窗

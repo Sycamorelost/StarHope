@@ -1,8 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
+import 'cached_file_avatar.dart';
+
 /// 用户头像：若设置了 avatarPath 显示图片，否则显示昵称首字母。
+/// 图片加载委托给 [CachedFileCircleAvatar]（stat 一次 + 缓存 FileImage）。
 class UserAvatar extends StatelessWidget {
   final String? avatarPath;
   final String nickname;
@@ -17,21 +18,18 @@ class UserAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final hasImage = avatarPath != null && avatarPath!.isNotEmpty && File(avatarPath!).existsSync();
-    return CircleAvatar(
+    return CachedFileCircleAvatar(
+      path: avatarPath,
       radius: radius,
       backgroundColor: cs.primaryContainer,
-      backgroundImage: hasImage ? FileImage(File(avatarPath!)) : null,
-      child: hasImage
-          ? null
-          : Text(
-              (nickname.isEmpty ? '?' : nickname).characters.first.toUpperCase(),
-              style: TextStyle(
-                fontSize: radius * 0.75,
-                color: cs.onPrimaryContainer,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+      fallback: Text(
+        (nickname.isEmpty ? '?' : nickname).characters.first.toUpperCase(),
+        style: TextStyle(
+          fontSize: radius * 0.75,
+          color: cs.onPrimaryContainer,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
