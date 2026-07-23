@@ -33,6 +33,12 @@ class OptionTile extends StatelessWidget {
   final bool selected;
   final bool disabled;
   final VoidCallback onTap;
+
+  /// Markdown 公式扩展语法与 builder 无内部状态，提为 static final 全局复用，
+  /// 避免答题时每次 rebuild 为每个选项重复构造（多选题每帧 N 个选项）。
+  static final _inlineSyntaxes = [FormulaSyntax()];
+  static final _builders = {'formula': FormulaBuilder()};
+
   const OptionTile({
     super.key,
     required this.text,
@@ -67,8 +73,8 @@ class OptionTile extends StatelessWidget {
                 selectable: true,
                 sizedImageBuilder: (c) =>
                     markdownImageBuilder(c.uri, c.title, c.alt),
-                inlineSyntaxes: [FormulaSyntax()],
-                builders: {'formula': FormulaBuilder()},
+                inlineSyntaxes: _inlineSyntaxes,
+                builders: _builders,
                 styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
                     .copyWith(p: const TextStyle(fontSize: 14)),
               ),
