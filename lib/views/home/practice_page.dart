@@ -30,6 +30,12 @@ class _PracticePageState extends State<PracticePage> {
   // 即时模式单题计时
   String? _shownQid;
   int _qStartMs = 0;
+  // 缓存当前题的 future，仅在 题序/session 变化时重新取题（避免每次敲键 rebuild 重查 DB）
+  String? _qFutureKey;
+  Future<Question?>? _qFuture;
+  // 完成统计页全表 future，按 session 缓存（只扫一次，不随 rebuild 重扫）
+  String? _summaryFutureKey;
+  Future<List<Question>>? _summaryFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -314,8 +320,13 @@ class _PracticePageState extends State<PracticePage> {
     }
     if (session.mode == 'batch') return _batchRunningView(context, pe, session);
     // instant
+    final key = '${identityHashCode(session)}:$idx';
+    if (_qFutureKey != key) {
+      _qFutureKey = key;
+      _qFuture = AppDatabase.instance.getQuestion(session.questionIds[idx]);
+    }
     return FutureBuilder<Question?>(
-      future: AppDatabase.instance.getQuestion(session.questionIds[idx]),
+      future: _qFuture,
       builder: (_, snap) {
         if (!snap.hasData) return const Center(child: CircularProgressIndicator());
         final q = snap.data!;
@@ -657,8 +668,13 @@ class _PracticePageState extends State<PracticePage> {
     final correct = s.answers.where((a) => a.correct).length;
     final total = s.answers.length;
     final totalSec = (s.finishedAt ?? s.startedAt) - s.startedAt;
+    final skey = 'summary:${identityHashCode(s)}';
+    if (_summaryFutureKey != skey) {
+      _summaryFutureKey = skey;
+      _summaryFuture = AppDatabase.instance.allQuestions();
+    }
     return FutureBuilder<List<Question>>(
-      future: AppDatabase.instance.allQuestions(),
+      future: _summaryFuture,
       builder: (_, snap) {
         final all = snap.data ?? const [];
         final map = {for (final q in all) q.id: q};

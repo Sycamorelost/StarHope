@@ -30,6 +30,16 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   final ExportService _export = ExportService();
+  // 数据根目录在 initState 取一次，避免内联 FutureBuilder 每次 rebuild 重读配置。
+  String? _dataRoot;
+
+  @override
+  void initState() {
+    super.initState();
+    StorageConfig.dataRoot().then((r) {
+      if (mounted) setState(() => _dataRoot = r);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,14 +140,11 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 8),
           // 数据存储位置
           _sectionTitle('数据存储位置'),
-          FutureBuilder<String>(
-            future: StorageConfig.dataRoot(),
-            builder: (_, snap) => _menuTile(
-              icon: Icons.folder_open_outlined,
-              title: '打开资源文件夹',
-              subtitle: snap.data ?? '加载中…',
-              onTap: () => _openDataFolder(),
-            ),
+          _menuTile(
+            icon: Icons.folder_open_outlined,
+            title: '打开资源文件夹',
+            subtitle: _dataRoot ?? '加载中…',
+            onTap: () => _openDataFolder(),
           ),
           _menuTile(
             icon: Icons.drive_folder_upload_outlined,
