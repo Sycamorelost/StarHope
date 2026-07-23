@@ -76,6 +76,16 @@ class PluginService {
     await _db.deletePlugin(id);
   }
 
+  /// 删除所有已安装插件的磁盘目录（DB 行由 clearAll({'plugins'}) 清理）。
+  /// 用于"删除数据"按模块全量清理插件。
+  Future<void> deleteAllDirs() async {
+    final dir = await pluginsDir();
+    if (!await dir.exists()) return;
+    await for (final sub in dir.list(recursive: false, followLinks: false)) {
+      if (sub is Directory) await sub.delete(recursive: true);
+    }
+  }
+
   Future<void> setEnabled(String id, bool v) => _db.setPluginEnabled(id, v);
 
   Future<void> setParams(String id, String paramsJson) =>

@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:path/path.dart' as p;
+
 import '../core/constants.dart';
 import '../core/crypto/crypto_service.dart';
 import '../core/models/models.dart';
@@ -9,8 +11,10 @@ import '../core/models/share_meta.dart';
 import '../core/models/user.dart';
 import '../core/starhope_format.dart';
 import 'database/database.dart';
+import 'data_modules.dart';
 import 'file_storage_service.dart';
 import 'question_serializer.dart';
+import 'storage_config.dart';
 
 /// 导出 / 导入 / 防伪服务（服务层）
 class ExportService {
@@ -104,7 +108,7 @@ class ExportService {
         const {
           'questions', 'folders', 'practices', 'exam_rules', 'exam_results',
           'wrong', 'wrong_groups', 'materials', 'ai_services', 'ai_agents',
-          'ai_conversations', 'ai_messages'
+          'ai_conversations', 'ai_messages', 'plugins'
         };
     bool on(String k) => m.contains(k);
     final files = <String, Uint8List>{};
@@ -186,6 +190,25 @@ class ExportService {
         }
       }
       payload['ai_messages'] = allMsgs;
+    }
+    if (on('plugins')) {
+      // 插件 = DB 登记行 + 磁盘上的插件目录（manifest/main.js/icon/storage.json 等）
+      payload['plugins'] = await _db.loadPlugins();
+      final pluginsRoot =
+          Directory(p.join(await StorageConfig.dataRoot(), 'plugins'));
+      if (await pluginsRoot.exists()) {
+        await for (final sub
+            in pluginsRoot.list(recursive: false, followLinks: false)) {
+          if (sub is! Directory) continue;
+          final id = p.basename(sub.path);
+          await for (final f in sub.list(recursive: true, followLinks: false)) {
+            if (f is! File) continue;
+            final rel = p.relative(f.path, from: sub.path);
+            files['plugins/$id/$rel'] =
+                Uint8List.fromList(await f.readAsBytes());
+          }
+        }
+      }
     }
 
     await StarHopeFile.write(
@@ -490,84 +513,159 @@ class ExportService {
   String _fmtTime(int ms) =>
       DateTime.fromMillisecondsSinceEpoch(ms).toString().substring(0, 16);
 
-  /// 全库恢复（清空并重建）
-  Future<void> restoreBackup(StarHopeFile file) async {
-    await _db.clearAll();
+  /// 从备份恢复。
+  ///
+  /// - [modules] 为 null：全量恢复（先 clearAll 清空全部，再全恢复）——旧行为。
+  /// - [modules] 非空：**选择性恢复**，只恢复所选模块；仅清空所选模块的表与磁盘，
+  ///   其它数据不动（不再一股脑 clearAll 全覆盖）。
+  Future<void> restoreBackup(StarHopeFile file, {Set<String>? modules}) async {
     final p = file.payload;
+    bool want(String m) => modules == null || modules.contains(m);
+
+    // 全量恢复清空全部表；选择性恢复只清空所选模块的表。
+    await _db.clearAll(modules == null ? null : DataModule.tablesFor(modules));
+
+    // 选择性恢复时，对带磁盘文件的模块做"全量替换"：先清空其磁盘目录。
+    if (modules != null) {
+      if (modules.contains('materials')) {
+        await FileStorageService.clearAttachments();
+      }
+      if (modules.contains('plugins')) {
+        await _clearPluginsDir();
+      }
+    }
+
     // 题目
-    for (final raw in (p['questions'] as List?) ?? const []) {
-      await _db.upsertQuestion(
-          Question.fromJson(raw as Map<String, dynamic>));
+    if (want('questions')) {
+      for (final raw in (p['questions'] as List?) ?? const []) {
+        await _db.upsertQuestion(
+            Question.fromJson(raw as Map<String, dynamic>));
+      }
     }
     // 题库夹
-    for (final raw in (p['question_folders'] as List?) ?? const []) {
-      await _db.saveFolder(QuestionFolder.fromRow(raw as Map<String, dynamic>));
+    if (want('folders')) {
+      for (final raw in (p['question_folders'] as List?) ?? const []) {
+        await _db.saveFolder(QuestionFolder.fromRow(raw as Map<String, dynamic>));
+      }
     }
     // 练习历史
-    for (final raw in (p['practice_sessions'] as List?) ?? const []) {
-      await _db.savePractice(
-          PracticeSession.fromRow(raw as Map<String, dynamic>));
+    if (want('practices')) {
+      for (final raw in (p['practice_sessions'] as List?) ?? const []) {
+        await _db.savePractice(
+            PracticeSession.fromRow(raw as Map<String, dynamic>));
+      }
     }
     // 考试规则/结果
-    for (final raw in (p['exam_rules'] as List?) ?? const []) {
-      await _db.saveExamRule(ExamRule.fromRow(raw as Map<String, dynamic>));
+    if (want('exam_rules')) {
+      for (final raw in (p['exam_rules'] as List?) ?? const []) {
+        await _db.saveExamRule(ExamRule.fromRow(raw as Map<String, dynamic>));
+      }
     }
-    for (final raw in (p['exam_results'] as List?) ?? const []) {
-      await _db.saveExamResult(ExamResult.fromRow(raw as Map<String, dynamic>));
+    if (want('exam_results')) {
+      for (final raw in (p['exam_results'] as List?) ?? const []) {
+        await _db.saveExamResult(ExamResult.fromRow(raw as Map<String, dynamic>));
+      }
     }
     // 错题（保真恢复：直接写完整字段，不走 recordWrong 的累加语义）
-    for (final raw in (p['wrong_questions'] as List?) ?? const []) {
-      final w = WrongQuestion.fromRow(raw as Map<String, dynamic>);
-      if (w.questionId.isEmpty) continue;
-      await _db.saveWrong(w);
+    if (want('wrong')) {
+      for (final raw in (p['wrong_questions'] as List?) ?? const []) {
+        final w = WrongQuestion.fromRow(raw as Map<String, dynamic>);
+        if (w.questionId.isEmpty) continue;
+        await _db.saveWrong(w);
+      }
     }
-    for (final raw in (p['wrong_groups'] as List?) ?? const []) {
-      await _db.saveWrongGroup(WrongGroup.fromRow(raw as Map<String, dynamic>));
+    if (want('wrong_groups')) {
+      for (final raw in (p['wrong_groups'] as List?) ?? const []) {
+        await _db.saveWrongGroup(WrongGroup.fromRow(raw as Map<String, dynamic>));
+      }
     }
     // 资料 + 笔记 + 文件
-    for (final raw in (p['materials'] as List?) ?? const []) {
-      final m = raw as Map<String, dynamic>;
-      final fmt = MaterialFormatX.fromExt((m['format'] as String?) ?? 'txt');
-      String? storedPath;
-      final fileName = '${m['id']}.$fmt';
-      if (file.files.containsKey(fileName)) {
-        storedPath = await _writeMaterialFile(fileName, file.files[fileName]!);
-      }
-      final material = ReadingMaterial(
-        id: (m['id'] as String?) ?? CryptoService.generateId(),
-        title: (m['title'] as String?) ?? '未命名',
-        format: fmt,
-        storedPath: storedPath ?? '',
-        sizeBytes: (m['size_bytes'] as num?)?.toInt() ?? 0,
-        sourceNickname: m['source_nickname'] as String?,
-        sourceAuthorId: m['source_author_id'] as String?,
-        progress: (m['progress'] as num?)?.toDouble() ?? 0,
-        finished: m['finished'] as bool? ?? false,
-        addedAt: (m['added_at'] as num?)?.toInt() ??
-            DateTime.now().millisecondsSinceEpoch,
-        lastReadAt: (m['last_read_at'] as num?)?.toInt() ??
-            DateTime.now().millisecondsSinceEpoch,
-      );
-      await _db.saveMaterial(material);
-      for (final nraw in (m['notes'] as List?) ?? const []) {
-        await _db.saveNote(Note.fromJson(nraw as Map<String, dynamic>).copyWith(
-            id: CryptoService.generateId(), materialId: material.id));
+    if (want('materials')) {
+      for (final raw in (p['materials'] as List?) ?? const []) {
+        final m = raw as Map<String, dynamic>;
+        final fmt = MaterialFormatX.fromExt((m['format'] as String?) ?? 'txt');
+        String? storedPath;
+        final fileName = '${m['id']}.$fmt';
+        if (file.files.containsKey(fileName)) {
+          storedPath = await _writeMaterialFile(fileName, file.files[fileName]!);
+        }
+        final material = ReadingMaterial(
+          id: (m['id'] as String?) ?? CryptoService.generateId(),
+          title: (m['title'] as String?) ?? '未命名',
+          format: fmt,
+          storedPath: storedPath ?? '',
+          sizeBytes: (m['size_bytes'] as num?)?.toInt() ?? 0,
+          sourceNickname: m['source_nickname'] as String?,
+          sourceAuthorId: m['source_author_id'] as String?,
+          progress: (m['progress'] as num?)?.toDouble() ?? 0,
+          finished: m['finished'] as bool? ?? false,
+          addedAt: (m['added_at'] as num?)?.toInt() ??
+              DateTime.now().millisecondsSinceEpoch,
+          lastReadAt: (m['last_read_at'] as num?)?.toInt() ??
+              DateTime.now().millisecondsSinceEpoch,
+        );
+        await _db.saveMaterial(material);
+        for (final nraw in (m['notes'] as List?) ?? const []) {
+          await _db.saveNote(Note.fromJson(nraw as Map<String, dynamic>).copyWith(
+              id: CryptoService.generateId(), materialId: material.id));
+        }
       }
     }
     // AI（服务不含密钥；智能体/对话/消息保真）
-    for (final raw in (p['ai_services'] as List?) ?? const []) {
-      await _db.saveAIService(
-          AIServiceConfig.fromRow(raw as Map<String, dynamic>));
+    if (want('ai_services')) {
+      for (final raw in (p['ai_services'] as List?) ?? const []) {
+        await _db.saveAIService(
+            AIServiceConfig.fromRow(raw as Map<String, dynamic>));
+      }
     }
-    for (final raw in (p['ai_agents'] as List?) ?? const []) {
-      await _db.saveAgent(AIAgent.fromRow(raw as Map<String, dynamic>));
+    if (want('ai_agents')) {
+      for (final raw in (p['ai_agents'] as List?) ?? const []) {
+        await _db.saveAgent(AIAgent.fromRow(raw as Map<String, dynamic>));
+      }
     }
-    for (final raw in (p['ai_conversations'] as List?) ?? const []) {
-      await _db.saveConversation(
-          AIConversation.fromRow(raw as Map<String, dynamic>));
+    if (want('ai_conversations')) {
+      for (final raw in (p['ai_conversations'] as List?) ?? const []) {
+        await _db.saveConversation(
+            AIConversation.fromRow(raw as Map<String, dynamic>));
+      }
     }
-    for (final raw in (p['ai_messages'] as List?) ?? const []) {
-      await _db.saveMessage(AIMessage.fromRow(raw as Map<String, dynamic>));
+    if (want('ai_messages')) {
+      for (final raw in (p['ai_messages'] as List?) ?? const []) {
+        await _db.saveMessage(AIMessage.fromRow(raw as Map<String, dynamic>));
+      }
+    }
+    // 插件（DB 登记行 + 磁盘目录文件）
+    if (want('plugins')) {
+      await _restorePlugins(file);
+    }
+  }
+
+  /// 删除整个 plugins 目录（DB 行由 clearAll({'plugins'}) 清理）。
+  Future<void> _clearPluginsDir() async {
+    final d = Directory(p.join(await StorageConfig.dataRoot(), 'plugins'));
+    if (await d.exists()) await d.delete(recursive: true);
+  }
+
+  /// 从备份恢复插件：逐个写回 plugins/<id>/ 下所有文件并登记 DB 行。
+  Future<void> _restorePlugins(StarHopeFile file) async {
+    final rows = (file.payload['plugins'] as List?) ?? const [];
+    final pluginsRoot =
+        Directory(p.join(await StorageConfig.dataRoot(), 'plugins'));
+    for (final raw in rows) {
+      final row = raw as Map<String, dynamic>;
+      final id = (row['id'] as String?) ?? '';
+      if (id.isEmpty) continue;
+      final dir = Directory(p.join(pluginsRoot.path, id));
+      await dir.create(recursive: true);
+      final prefix = 'plugins/$id/';
+      for (final entry in file.files.entries) {
+        if (!entry.key.startsWith(prefix)) continue;
+        final rel = entry.key.substring(prefix.length);
+        final f = File(p.join(dir.path, rel));
+        await f.parent.create(recursive: true);
+        await f.writeAsBytes(entry.value);
+      }
+      await _db.upsertPlugin(Map<String, Object?>.from(row));
     }
   }
 

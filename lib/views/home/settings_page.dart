@@ -12,8 +12,10 @@ import '../../providers/question_provider.dart';
 import '../../providers/reader_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/database/database.dart';
+import '../../services/data_modules.dart';
 import '../../services/export_service.dart';
 import '../../services/file_storage_service.dart';
+import '../../services/plugin/plugin_service.dart';
 import '../../services/secure_storage_service.dart';
 import '../../services/storage_config.dart';
 import '../common/glass.dart';
@@ -116,13 +118,13 @@ class _SettingsPageState extends State<SettingsPage> {
           _menuTile(
             icon: Icons.backup_outlined,
             title: '全库备份',
-            subtitle: '导出全部题目 / 资料 / 笔记 / 历史（不含 AI 密钥）',
+            subtitle: '勾选要备份的模块（题库/资料/笔记/历史/插件等，不含 AI 密钥）',
             onTap: () => _fullBackup(context, auth),
           ),
           _menuTile(
             icon: Icons.restore_outlined,
             title: '从备份恢复',
-            subtitle: '清空当前数据并从备份重建',
+            subtitle: '选择要恢复的模块，仅替换对应数据，其它不受影响',
             onTap: () => _restore(context, auth),
           ),
           const SizedBox(height: 8),
@@ -268,26 +270,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _factoryReset(BuildContext context, AuthProvider auth) async {
-    // 1. 选择要删除的模块（复用备份模块清单）
-    final modules = await _pickBackupModules(context);
+    // 1. 选择要删除的模块（复用统一模块注册表）
+    final modules = await _pickBackupModules(context, title: '选择删除内容');
     if (modules == null || modules.isEmpty) return;
     if (!context.mounted) return;
 
-    const map = <String, List<String>>{
-      'questions': ['questions'],
-      'folders': ['question_folders'],
-      'practices': ['practice_sessions'],
-      'exam_rules': ['exam_rules'],
-      'exam_results': ['exam_results'],
-      'wrong': ['wrong_questions'],
-      'wrong_groups': ['wrong_groups'],
-      'materials': ['reading_materials', 'notes'],
-      'ai_services': ['ai_services'],
-      'ai_agents': ['ai_agents'],
-      'ai_conversations': ['ai_conversations'],
-      'ai_messages': ['ai_messages'],
-    };
-    final tables = <String>{for (final m in modules) ...?map[m]};
+    final tables = DataModule.tablesFor(modules);
 
     // 2. 确认 + 是否删账户
     var delAccount = false;
@@ -331,6 +319,9 @@ class _SettingsPageState extends State<SettingsPage> {
     if (tables.isNotEmpty) await db.clearAll(tables);
     if (modules.contains('materials')) {
       await FileStorageService.clearAttachments();
+    }
+    if (modules.contains('plugins')) {
+      await PluginService().deleteAllDirs();
     }
     if (delAccount) {
       await db.deleteUser();
@@ -463,46 +454,56 @@ class _SettingsPageState extends State<SettingsPage> {
     if (chosen != null) theme.setCloseAction(chosen);
   }
 
-  Future<Set<String>?> _pickBackupModules(BuildContext context) {
-    final all = <(String, String, IconData)>[
-      ('questions', '题库题目', Icons.library_books_outlined),
-      ('folders', '题库文件夹', Icons.folder_outlined),
-      ('practices', '练习历史', Icons.history),
-      ('exam_rules', '考试规则', Icons.school_outlined),
-      ('exam_results', '考试结果', Icons.assignment_turned_in_outlined),
-      ('wrong', '错题本', Icons.error_outline),
-      ('wrong_groups', '错题分组', Icons.label_outline),
-      ('materials', '阅读资料与笔记', Icons.menu_book_outlined),
-      ('ai_services', 'AI 服务配置（不含密钥）', Icons.cloud_outlined),
-      ('ai_agents', 'AI 智能体', Icons.smart_toy_outlined),
-      ('ai_conversations', 'AI 对话', Icons.chat_bubble_outline),
-      ('ai_messages', 'AI 消息', Icons.message_outlined),
-    ];
-    final selected = <String>{for (final e in all) e.$1};
+  /// 模块 → 图标映射（视图层负责呈现，服务层 DataModule 不含 Flutter 依赖）。
+  static const _moduleIcons = <String, IconData>{
+    'questions': Icons.library_books_outlined,
+    'folders': Icons.folder_outlined,
+    'practices': Icons.history,
+    'exam_rules': Icons.school_outlined,
+    'exam_results': Icons.assignment_turned_in_outlined,
+    'wrong': Icons.error_outline,
+    'wrong_groups': Icons.label_outline,
+    'materials': Icons.menu_book_outlined,
+    'ai_services': Icons.cloud_outlined,
+    'ai_agents': Icons.smart_toy_outlined,
+    'ai_conversations': Icons.chat_bubble_outline,
+    'ai_messages': Icons.message_outlined,
+    'plugins': Icons.extension,
+  };
+
+  /// 选择模块的统一对话框，备份 / 恢复 / 删除三处复用。
+  /// [available] 非空时只展示这些模块（恢复时仅列备份里实际存在的模块）。
+  Future<Set<String>?> _pickBackupModules(BuildContext context,
+      {String title = '选择备份内容', Set<String>? available}) {
+    final list = available == null
+        ? DataModule.all
+        : DataModule.all.where((m) => available.contains(m.id)).toList();
+    final selected = <String>{for (final m in list) m.id};
     return showDialog<Set<String>?>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (sctx, set) => AlertDialog(
-          title: const Text('选择备份内容'),
+          title: Text(title),
           content: SizedBox(
             width: 360,
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (final e in all)
+                  for (final m in list)
                     CheckboxListTile(
                       dense: true,
-                      value: selected.contains(e.$1),
+                      value: selected.contains(m.id),
                       onChanged: (v) => set(() {
                         if (v == true) {
-                          selected.add(e.$1);
+                          selected.add(m.id);
                         } else {
-                          selected.remove(e.$1);
+                          selected.remove(m.id);
                         }
                       }),
-                      secondary: Icon(e.$3, size: 20),
-                      title: Text(e.$2),
+                      secondary: Icon(_moduleIcons[m.id] ?? Icons.extension,
+                          size: 20),
+                      title: Text(m.label),
                     ),
                 ],
               ),
@@ -547,23 +548,6 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _restore(BuildContext context, AuthProvider auth) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('从备份恢复'),
-        content: const Text('此操作将清空当前全部数据并从备份重建，且不可撤销。确认继续？'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消')),
-          FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('确认恢复')),
-        ],
-      ),
-    );
-    if (ok != true) return;
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['starhope'],
@@ -573,7 +557,41 @@ class _SettingsPageState extends State<SettingsPage> {
       final (file, error) =
           await _export.importAndVerify(result.files.single.path!);
       if (file == null) throw error ?? '校验失败';
-      await _export.restoreBackup(file);
+
+      // 只展示备份中实际存在的模块
+      final available = DataModule.presentIn(file.payload);
+      if (available.isEmpty) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('备份中无可识别的数据模块')));
+        return;
+      }
+      if (!context.mounted) return;
+      final modules = await _pickBackupModules(context,
+          title: '选择恢复内容', available: available);
+      if (modules == null || modules.isEmpty) return;
+      if (!context.mounted) return;
+
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('从备份恢复'),
+          content: Text('将用备份中选中的 ${modules.length} 类数据替换当前对应数据，'
+              '其它数据不受影响。此操作不可撤销。确认继续？'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('取消')),
+            FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('确认恢复')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+
+      await _export.restoreBackup(file, modules: modules);
       if (!context.mounted) return;
       await context.read<QuestionBankProvider>().load();
       if (!context.mounted) return;
@@ -581,8 +599,8 @@ class _SettingsPageState extends State<SettingsPage> {
       if (!context.mounted) return;
       await context.read<PracticeExamProvider>().loadRulesAndResults();
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('恢复完成')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已恢复选中的 ${modules.length} 类数据')));
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
