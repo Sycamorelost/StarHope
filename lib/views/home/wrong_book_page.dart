@@ -11,6 +11,7 @@ import '../../providers/practice_exam_provider.dart';
 import '../../services/database/database.dart';
 import '../../services/export_service.dart';
 import '../common/glass.dart';
+import '../common/theme.dart';
 import 'practice_page.dart';
 import 'widgets/question_tile.dart';
 
@@ -339,8 +340,8 @@ class _WrongBookPageState extends State<WrongBookPage> {
       _selected.clear();
     });
     if (!context.mounted) return;
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => const PracticePage()));
+    Navigator.push(context,
+        MaterialPageRoute(builder: (_) => const FrostedBackground(child: PracticePage())));
   }
 
   /// 分类筛选条：掌握度 / 分组 / 题型 / 标签 / 来源

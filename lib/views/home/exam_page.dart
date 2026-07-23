@@ -11,6 +11,7 @@ import '../../providers/question_provider.dart';
 import '../../services/database/database.dart';
 import '../../services/export_service.dart';
 import '../common/glass.dart';
+import '../common/theme.dart';
 import 'practice_page.dart';
 import 'widgets/answer_card_dialog.dart';
 import 'widgets/import_export_dialogs.dart';
@@ -1109,7 +1110,7 @@ class _ExamPageState extends State<ExamPage> {
                     Navigator.pop(ctx);
                     pe.startPractice(wrongQs, mode: 'instant');
                     Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const PracticePage()));
+                        MaterialPageRoute(builder: (_) => const FrostedBackground(child: PracticePage())));
                   },
                 ),
               FilledButton(
