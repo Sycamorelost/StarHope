@@ -25,6 +25,9 @@ class _WrongBookPageState extends State<WrongBookPage> {
   List<WrongQuestion> _wrong = [];
   Map<String, Question> _map = {};
   List<WrongGroup> _groups = [];
+  // _filteredSorted 的 memo 缓存（按输入签名命中）
+  String? _fsKey;
+  List<WrongQuestion>? _fsCache;
   String _sort = 'time'; // time / count / mastery
   // 分类筛选
   List<String> _allTags = [];
@@ -84,8 +87,19 @@ class _WrongBookPageState extends State<WrongBookPage> {
     });
   }
 
-  /// 经分类筛选后的错题
+  /// 经分类筛选后的错题（按输入签名 memo：数据按身份、筛选按值；输入不变则复用上次结果，
+  /// 避免每次 rebuild 全量 where+sort）。
   List<WrongQuestion> get _filteredSorted {
+    final key = '${identityHashCode(_wrong)}|${identityHashCode(_map)}|'
+        '$_sort|${_typeFilter.join(',')}|${_tagFilter.join(',')}|'
+        '$_sourceFilter|${_masteryFilter.join(',')}|$_groupFilter|$_sessionFilter';
+    if (_fsKey == key && _fsCache != null) return _fsCache!;
+    _fsKey = key;
+    _fsCache = _computeFiltered();
+    return _fsCache!;
+  }
+
+  List<WrongQuestion> _computeFiltered() {
     var list = _wrong.where((w) {
       final q = _map[w.questionId];
       if (q == null) return false;

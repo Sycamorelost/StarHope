@@ -47,6 +47,10 @@ class _ReaderViewerPageState extends State<ReaderViewerPage> {
   bool _drawMode = false;
   // 文本路径绘图（按页分组，屏幕绝对坐标；翻页只显示当前页笔画）
   final Map<int, List<_Stroke>> _textStrokesByPage = {};
+  // 笔记侧栏按页分组 memo（按 notes 列表身份缓存，避免每帧重算）
+  int? _notesGroupKey;
+  Map<int, List<Note>>? _notesByPage;
+  List<int>? _notesPages;
   List<Offset> _currentStroke = [];
   int _currentPage = 0;
   final _noteText = TextEditingController();
@@ -1001,12 +1005,18 @@ class _ReaderViewerPageState extends State<ReaderViewerPage> {
 
   Widget _notesSidebar(BuildContext context, ReaderProvider rd) {
     final notes = rd.currentNotes;
-    // 按页分组
-    final byPage = <int, List<Note>>{};
-    for (final n in notes) {
-      byPage.putIfAbsent(n.pageIndex, () => []).add(n);
+    // 按页分组（memo：notes 列表身份不变则复用，避免每帧重算分组+排序）
+    if (_notesGroupKey != identityHashCode(notes)) {
+      _notesGroupKey = identityHashCode(notes);
+      final byPage = <int, List<Note>>{};
+      for (final n in notes) {
+        byPage.putIfAbsent(n.pageIndex, () => []).add(n);
+      }
+      _notesByPage = byPage;
+      _notesPages = byPage.keys.toList()..sort();
     }
-    final pages = byPage.keys.toList()..sort();
+    final byPage = _notesByPage!;
+    final pages = _notesPages!;
     return GlassCard(
       margin: const EdgeInsets.all(8),
       padding: const EdgeInsets.all(8),
