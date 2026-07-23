@@ -48,6 +48,16 @@ var test = '\ntry {\n\
   // 统计\n\
   onAction("goto:history",{});\n\
   ok(!!render(), "history stats render");\n\
+  // 历史单个/批量操作 + 统计单个清零\n\
+  ok(getHistory().length >= 1 && getHistory()[0].id, "history entry has id");\n\
+  var hid = getHistory()[0].id; onAction("histDel:draw:" + hid, {}); ok(!getHistory().some(function(h){return h.id===hid;}), "del single history");\n\
+  var spid = ""; var cs = getCounts(); for (var kk in cs) { if (cs[kk] > 0) { spid = kk; break; } }\n\
+  if (spid) { onAction("resetCount:" + spid, {}); ok(getCounts()[spid] === 0, "reset single count"); }\n\
+  onAction("histMode:draw", {}); ok(drawHistMode === true, "enter select mode");\n\
+  onAction("histAll:draw", {}); ok(Object.keys(drawHistSel).length > 0, "select all");\n\
+  onAction("histDelSel:draw", {}); ok(getHistory().length === 0, "batch delete selected");\n\
+  ok(Object.keys(drawHistSel).length === 0, "selection cleared after delete");\n\
+  onAction("histMode:draw", {}); ok(drawHistMode === false, "exit select mode");\n\
   // tabs\n\
   ["draw","prizes","roll","rollList","history","scheme","template"].forEach(function(t){ onAction("goto:"+t,{}); ok(!!render(), t+" render"); });\n\
   onAction("goto:template",{}); onAction("copyPrizeTemplate",{}); ok(!!storage._clip, "copy template to clipboard");\n\
